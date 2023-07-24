@@ -1,0 +1,274 @@
+---
+output: html_document
+---
+  
+```{r, echo=FALSE, results = 'hide', include = FALSE}
+package <- "SelfControlledCaseSeries"
+
+eo <- do.call(
+  what = rbind,
+  args = lapply(
+  X = 1:length(SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList),
+  FUN = function(k){
+    x <- SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList[[k]]
+    data.frame(
+      setting = k,
+      outcomeId = rep(x$outcomeId, length(x$exposures)),
+      exposureId = unlist(lapply(x$exposures, function(x){x$exposureId})),
+      exposureIdRef = unlist(lapply(x$exposures, function(x){paste0(x$exposureIdRef)})),
+      trueEffectSize = unlist(lapply(x$exposures, function(x){ifelse(is.null(x$trueEffectSize), '', x$trueEffectSize )}))
+    )
+      
+  }
+  )
+  )
+
+```
+
+## Self Controlled Case Series 
+
+::: {.panel-tabset}
+
+### Overview
+
+In total there are `r length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)` different self controlled case series analysis designs (see @sec-sccs-analysis) to be performed across `r sum(eo$trueEffectSize == '' & eo$exposureId != -1)` exposure outcome pairs (see @sec-sccs-eo).  In total `r length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)*sum(eo$trueEffectSize == '' & eo$exposureId != -1)` effect estimates will be calculated via the self controlled case series design.
+
+### Exposure Outcomes {#sec-sccs-eo}
+```{r, echo=FALSE, results = 'asis'}
+
+eoOfInt <- eo[eo$trueEffectSize == '' & eo$exposureId != -1,]
+eoOfInt$outcomeName <- sapply(
+  X = eoOfInt$outcomeId, 
+  FUN = function(x){paste0(cohortNames[cohortIds == x]," (<a href='#sec-",which(x==cohortIds), "'> view cohort </a>)")}
+  )
+eoOfInt$exposureName <- sapply(
+  X = eoOfInt$exposureId, 
+  FUN = function(x){paste0(cohortNames[cohortIds == x]," (<a href='#sec-",which(x==cohortIds), "'> view cohort </a>)")}
+  )
+
+reportTableFormat(
+  table = eoOfInt %>% 
+    dplyr::select(-c("trueEffectSize", "setting", "outcomeId", "exposureId", "exposureIdRef")), #%>%
+  #dplyr::group_by(.data$outcomeName) %>% 
+  #dplyr::summarize(exposureNames = paste(unique(.data$exposureName), collapse=',')), 
+  groupBy = 'outcomeName',
+  columns = list(
+    outcomeName = reactable::colDef(
+          html = TRUE, 
+          filterable = T
+          ),
+     exposureName = reactable::colDef(
+          html = TRUE, 
+          filterable = T
+          )
+  ),
+  caption = 'Outcome exposure pairs of interest included in study'
+  )
+
+```
+
+### Negative Outcomes 
+```{r, echo=FALSE, results = 'hide', include = FALSE}
+
+neo <- eo[eo$trueEffectSize == 1 & eo$exposureId != -1,]
+
+negTab <- do.call(
+  what = rbind,
+  args = lapply(
+  X = neo$outcomeId, 
+  FUN = function(x){negativeControls[negativeControls$cohortId == x,]}
+  )
+)
+
+negTab$exposureName <- sapply(
+  X = neo$exposureId, 
+  FUN = function(x){paste0(cohortNames[cohortIds == x]," (<a href='#sec-",which(x==cohortIds), "'> view cohort </a>)")}
+  )
+negTab <- negTab %>% 
+  dplyr::mutate(outcomeName = paste(.data$cohortName, '(concept: ',.data$outcomeConceptId,')')) %>%
+  dplyr::select(-c("cohortId","cohortName","outcomeConceptId")) #%>%
+  #dplyr::group_by(
+  #  .data$outcomeName,.data$occurrenceType, .data$detectOnDescendants) %>% 
+  #dplyr::summarize(exposureNames = paste(unique(.data$exposureName), collapse=','))
+
+```
+
+```{r, echo=FALSE, results = 'asis'}
+cat(paste("A total of ", length(unique(neo$outcomeId)), " negative control outcomes were included in the analysis"), sep = '\n')
+
+reportTableFormat(
+  table = negTab,
+  groupBy = c('outcomeName', 'exposureName'),
+  columns = list(
+    outcomeName = reactable::colDef(
+          html = TRUE, 
+          filterable = T
+          ),
+    exposureName = reactable::colDef(
+          html = TRUE, 
+          filterable = T
+          )
+    
+  ),
+  caption = 'Negative outcome included in study'
+  )
+cat('\n')
+```
+
+### Analyses {#sec-sccs-analysis}
+```{r, echo=FALSE, results = 'asis'}
+
+
+for(i in 1:length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)){
+  
+  analysisSetting <- SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList[[i]]
+    
+  cat(
+    paste0('#### Analysis ', analysisSetting$analysisId,': ', analysisSetting$description, ' \n'), 
+    sep = '\n'
+    )
+  
+   #cat("\n::: panel-tabset\n")
+  for( settingName in names(analysisSetting)[-which(names(analysisSetting) %in% c('analysisId','description','createIntervalDataArgs') )] ){
+    
+    functionName <- getFunctionFromArgName(package, settingName)
+    
+   cat(paste0('\n##### ',settingName,' Settings \n'),
+       
+           getHelpText(
+    package = 'SelfControlledCaseSeries',
+    functionName = functionName,
+    input = NULL
+), sep = '\n')
+    
+descAndDefault <- getAllHelpDetails(package, functionName)
+settingDf <- getSettingsTable(
+  package = package, 
+  functionName = functionName, 
+  settings = analysisSetting[[settingName]]
+  )
+
+  print(
+    htmltools::tagList(
+    reportTableFormat(
+      table = settingDf,
+      groupBy = "input",
+    columns = defaultColumns(settingDf)
+    )
+  )
+  )
+    
+  }
+  
+  # analysisSetting$createIntervalDataArgs
+   cat(paste0('\n##### ','createIntervalDataArgs',' Settings \n'),
+   
+   getHelpText(
+    package = package,
+    functionName = 'createSccsIntervalData',
+    input = NULL
+), sep ='\n'
+)
+   
+   allData <- getSettingsTable(
+  package = package, 
+  functionName = 'createCreateSccsIntervalDataArgs', 
+  settings = list(
+    minCasesForTimeCovariates = analysisSetting$createIntervalDataArgs$minCasesForTimeCovariates,
+    eventDependentObservation = analysisSetting$createIntervalDataArgs$eventDependentObservation
+  )
+)
+   
+  if(inherits(analysisSetting$createIntervalDataArgs$eraCovariateSettings, "EraCovariateSettings")){
+    analysisSetting$createIntervalDataArgs$eraCovariateSettings <- list(analysisSetting$createIntervalDataArgs$eraCovariateSettings)
+  }
+  for(l in 1:length(analysisSetting$createIntervalDataArgs$eraCovariateSettings)){
+    ecs <- analysisSetting$createIntervalDataArgs$eraCovariateSettings[[l]]
+  
+    allData <- rbind(
+      allData,
+      getSettingsTable(
+    package = package,
+    functionName = 'createEraCovariateSettings',
+    settings  = analysisSetting$createIntervalDataArgs$eraCovariateSettings[[l]]
+) %>% dplyr::mutate("level2" = .data$input) %>%
+  dplyr::mutate("input" = paste0('eraCovariateSettings ', l))
+)
+    
+  }
+   if(!is.null(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings)){
+   if(inherits(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings, "CalendarTimeCovariateSettings")){
+    analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings <- list(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings)
+  }
+  for(l in 1:length(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings)){
+    ctcs <- analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings[[l]]
+    
+     allData <- rbind(
+      allData,
+      getSettingsTable(
+    package = package,
+    functionName = 'createCalendarTimeCovariateSettings',
+    settings  = ctcs
+) %>% dplyr::mutate("level2" = .data$input) %>%
+  dplyr::mutate("input" = paste0('calendarTimeCovariateSettings ', l))
+)
+    
+  }
+   }
+   
+   if(!is.null(analysisSetting$createIntervalDataArgs$ageCovariateSettings)){
+   if(inherits(analysisSetting$createIntervalDataArgs$ageCovariateSettings, "AgeCovariateSettings")){
+    analysisSetting$createIntervalDataArgs$ageCovariateSettings <- list(analysisSetting$createIntervalDataArgs$ageCovariateSettings)
+  }
+  for(l in 1:length(analysisSetting$createIntervalDataArgs$ageCovariateSettings)){
+    acs <- analysisSetting$createIntervalDataArgs$ageCovariateSettings[[l]]
+    
+     allData <- rbind(
+      allData,
+      getSettingsTable(
+    package = package,
+    functionName = 'createAgeCovariateSettings',
+    settings  = acs
+) %>% dplyr::mutate("level2" = .data$input) %>%
+  dplyr::mutate("input" = paste0('ageCovariateSettings ', l))
+)
+    
+  }
+   }
+   
+      if(!is.null(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings)){
+   if(inherits(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings, "SeasonalityCovariateSettings")){
+    analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings <- list(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings)
+  }
+  for(l in 1:length(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings)){
+    scs <- analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings[[l]]
+    
+     allData <- rbind(
+      allData,
+      getSettingsTable(
+    package = package,
+    functionName = 'createSeasonalityCovariateSettings',
+    settings  = scs
+) %>% dplyr::mutate("level2" = .data$input) %>%
+  dplyr::mutate("input" = paste0('seasonalityCovariateSettings ', l))
+)
+    
+  }
+   }
+  
+   print(
+    htmltools::tagList(
+      reportTableFormat(
+      table = allData, 
+      groupBy = 'input', 
+      columns = defaultColumns(allData)
+    )
+    )
+   )
+   
+   #cat("\n:::\n")
+}
+
+```
+
+:::

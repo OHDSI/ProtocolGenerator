@@ -1,0 +1,84 @@
+---
+output: html_document
+---
+  
+## Cohort Incidence
+
+### Overview
+
+A total of ``r do.call(prod, lapply(CohortIncidenceModuleSettings$settings$irDesign$analysisList, function(x){length(x[[1]])*length(x[[2]])*length(x[[3]])}))`` incidence rates will be developed for all combinations or Targets (see @sec-incidence-targets), Outcomes (see @sec-incidence-outcomes) and TARs (see @sec-incidence-tars). 
+
+### Analyses
+
+```{r, echo=FALSE, results = 'asis'}
+
+  tarDefs <- CohortIncidenceModuleSettings$settings$irDesign$timeAtRiskDefs
+getTarString <- function(tarDefs, tarId){
+    res <- tarDefs[[which(unlist(lapply(tarDefs, function(x) x$id)) == tarId)]]
+    
+    return(paste0('(',res$start$dateField ,' + ', res$start$offset, ') - (', res$end$dateField, ' + ', res$end$offset, ')'))
+}
+
+i <- 1
+
+  targetIds <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$targets
+  
+  # this is now the ci cohort ids not the main cohort ids
+  outcomeIdsCI <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$outcomes
+  # create lookup to find outcome ids
+  outcomeLookup <- as.data.frame(
+    do.call(
+      rbind, 
+      CohortIncidenceModuleSettings$settings$irDesign$outcomeDefs)
+    )
+  outcomeIds <- outcomeLookup$cohortId[outcomeLookup$id %in% outcomeIdsCI]
+  
+  targets = sapply(
+    targetIds, 
+    function(x){
+      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
+    }
+  )
+  outcomes = sapply(
+    outcomeIds, 
+        function(x){
+      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
+    }
+    )
+  
+  tars <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$tars
+  
+  cat("#### Targets {#sec-incidence-targets} \n",
+      paste0(' - ',paste0(targets , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+  cat("\n#### Outcomes {#sec-incidence-outcomes} \n",
+      paste0(' - ',paste0(outcomes , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+  cat("\n#### Time-at-risks (TARs) {#sec-incidence-tars} \n",
+      paste0(' - ',paste0(sapply(tars, function(x){getTarString(tarDefs, x)}) , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+   cat("\n#### Stratification \n", sep ='\n')
+   
+   strataTable <- getSettingsTable(
+  package = 'CohortIncidence', 
+  functionName = 'createStrataSettings',
+  #settings = CohortIncidenceModuleSettings$settings$irDesign$strataSettings
+  settings = as.list(sapply(CohortIncidenceModuleSettings$settings$irDesign$strataSettings, function(x) paste(x, sep = ',', collapse = ','))) 
+)
+
+    reportTableFormat(
+      table = strataTable, 
+      groupBy = 'input',
+      columns = defaultColumns(strataTable),
+      caption = 'Stratification settings'
+      )
+      
+  
+```
+

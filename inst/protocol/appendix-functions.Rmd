@@ -1,0 +1,179 @@
+---
+output: html_document
+---
+  
+## Settings Functions 
+
+### Cohort Method
+```{r echo=FALSE, results='asis'}
+
+defaultSettingsToKable <- function(name){
+    
+    if(name != 'createStudyPopArgs'){
+      defaultSettings <- functionDefaults(gsub('Args', '', name))
+    } else{
+      defaultSettings <- functionDefaults(CohortMethod::createStudyPopulation)
+    }
+    
+  settingLength <- sapply(defaultSettings, length)
+  
+  if(sum(settingLength == 1)>0){
+    allData <-  data.frame(
+      setting = names(defaultSettings[which(settingLength == 1)]),
+      value = unlist(lapply(defaultSettings[which(settingLength == 1)], function(x) paste(x, sep = ',', collapse = ' and '))),
+      
+      row.names = NULL
+    )
+  } else{
+    allData <- allData <- data.frame()
+  }
+  allGroupInfo <- c()
+  
+  if(sum(settingLength > 1)>0){
+    for(longSettings in names(defaultSettings)[settingLength > 1]){
+      
+      if(is.null(names(defaultSettings[[longSettings]]))){
+        names(defaultSettings[[longSettings]]) <- paste0('value ', 1:length(defaultSettings[[longSettings]]))
+      }
+
+        groupInfo <- c(longSettings, nrow(allData)+1)
+      
+      allData <- rbind(
+        allData, 
+        data.frame(
+          setting = names(defaultSettings[[longSettings]]),
+          value = unlist(lapply(defaultSettings[[longSettings]], function(x) paste(x, sep = ',', collapse = ' and '))),
+          
+          row.names = NULL
+        )
+      )
+      
+      groupInfo <- c(groupInfo, nrow(allData ))
+      allGroupInfo <- rbind(allGroupInfo, groupInfo)
+      }
+    }
+  
+  caption <- paste0(
+    "The default settings for ",name
+    )
+  
+  result <- reportTableFormat(
+      table = allData , 
+      caption = caption
+    )
+  
+  if(!is.null(nrow(allGroupInfo))){
+    for(i in 1:nrow(allGroupInfo)){
+      result <- result %>% kableExtra::pack_rows(
+        group_label = allGroupInfo[i,1], 
+        start_row = allGroupInfo[i,2], 
+        end_row = allGroupInfo[i,3], 
+        label_row_css = "background-color: #666; color: #fff;"
+      )
+    }
+  }
+  
+  return(result)
+}
+
+
+analysisFunctions <- c("createStudyPopArgs", "createPsArgs", "matchOnPsArgs",
+                "computeCovariateBalanceArgs", "fitOutcomeModelArgs")
+
+for(analysisFunction in analysisFunctions){
+  cat('\n#### ', analysisFunction, paste0('{#sec-',analysisFunction,'}') ,'\n')
+  
+  print(
+    defaultSettingsToKable(analysisFunction)
+  )
+
+}
+
+```
+
+### Self Controlled Case Series Method
+```{r echo=FALSE, results='asis'}
+
+defaultSettingsToKable <- function(name){
+    
+    if(name != 'createStudyPopArgs'){
+      defaultSettings <- functionDefaults(gsub('Args', '', name))
+    } else{
+      defaultSettings <- functionDefaults(SelfControlledCaseSeries::createStudyPopulation)
+    }
+    
+  settingLength <- sapply(defaultSettings, length)
+  
+  if(sum(settingLength == 1)>0){
+    allData <-  data.frame(
+      setting = names(defaultSettings[which(settingLength == 1)]),
+      value = unlist(lapply(defaultSettings[which(settingLength == 1)], function(x) paste(x, sep = ',', collapse = ' and '))),
+      
+      row.names = NULL
+    )
+  } else{
+    allData <- allData <- data.frame()
+  }
+  allGroupInfo <- c()
+  
+  if(sum(settingLength > 1)>0){
+    for(longSettings in names(defaultSettings)[settingLength > 1]){
+      
+      if(is.null(names(defaultSettings[[longSettings]]))){
+        names(defaultSettings[[longSettings]]) <- paste0('value ', 1:length(defaultSettings[[longSettings]]))
+      }
+
+        groupInfo <- c(longSettings, nrow(allData)+1)
+      
+      allData <- rbind(
+        allData, 
+        data.frame(
+          setting = names(defaultSettings[[longSettings]]),
+          value = unlist(lapply(defaultSettings[[longSettings]], function(x) paste(x, sep = ',', collapse = ' and '))),
+          
+          row.names = NULL
+        )
+      )
+      
+      groupInfo <- c(groupInfo, nrow(allData ))
+      allGroupInfo <- rbind(allGroupInfo, groupInfo)
+      }
+    }
+  
+  caption <- paste0(
+    "The default settings for ",name
+    )
+  
+  result <- reportTableFormat(
+      table = allData , 
+      caption = caption
+    )
+  
+  if(!is.null(nrow(allGroupInfo))){
+    for(i in 1:nrow(allGroupInfo)){
+      result <- result %>% kableExtra::pack_rows(
+        group_label = allGroupInfo[i,1], 
+        start_row = allGroupInfo[i,2], 
+        end_row = allGroupInfo[i,3], 
+        label_row_css = "background-color: #666; color: #fff;"
+      )
+    }
+  }
+  
+  return(result)
+}
+
+library(SelfControlledCaseSeries)
+analysisFunctions <- c("getDbSccsDataArgs", 'createStudyPopulationArgs',
+                       "fitSccsModelArgs")#, "createIntervalDataArgs"
+  
+for(analysisFunction in analysisFunctions){
+  cat('\n#### ', analysisFunction, paste0('{#sec-',analysisFunction,'}') ,'\n')
+  
+  print(
+    defaultSettingsToKable(analysisFunction)
+  )
+
+}
+
+```

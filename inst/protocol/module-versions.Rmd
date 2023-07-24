@@ -1,0 +1,27 @@
+---
+output: html_document
+---
+  
+## Module Versions
+
+The OHDSI Strategus modules used in this study are:
+
+```{r echo=FALSE, results='asis'}
+
+moduleVersions <- data.frame(
+  module = unlist(lapply(json$moduleSpecifications, function(x) x$module)),
+  version = unlist(lapply(json$moduleSpecifications, function(x) x$version)),
+  remoteRepo = unlist(lapply(json$moduleSpecifications, function(x) x$remoteRepo)),
+  remoteUsername = unlist(lapply(json$moduleSpecifications, function(x) x$remoteUsername))
+)
+
+reportTableFormat(
+  moduleVersions
+)
+       
+
+```
+
+
+
+

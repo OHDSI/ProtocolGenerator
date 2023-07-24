@@ -1,0 +1,151 @@
+---
+output: html_document
+---
+  
+## Characterization
+
+### Target With and Without Outcome during TAR
+
+Differences in covariate (see @sec-char-features) mean values between the target population with the outcome during TAR and the target population without the outcome during TAR will be run for all combinations or Targets (see @sec-char-targets), Outcomes (see @sec-char-outcomes) and TARs (see @sec-char-tars).  
+
+```{r, echo=FALSE, results = 'asis'}
+  targets = sapply(
+    CharacterizationModuleSettings$settings$aggregateCovariateSettings[[1]]$targetIds, 
+    function(x){
+      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
+    }
+  )
+
+  outcomes = sapply(
+    CharacterizationModuleSettings$settings$aggregateCovariateSettings[[1]]$outcomeIds, 
+        function(x){
+      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
+    }
+    )
+  
+  cat("#### Targets {#sec-char-targets} \n",
+      paste0(' - ',paste0(targets , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+  cat("\n#### Outcomes {#sec-char-outcomes} \n",
+      paste0(' - ',paste0(outcomes , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+  tars <- unlist(lapply(
+    CharacterizationModuleSettings$settings$aggregateCovariateSettings, function(x){
+      paste0('(',
+             x$startAnchor, '+', x$riskWindowStart, 
+             ')-(',
+             x$endAnchor, '+', x$riskWindowEnd
+             ,')')
+    }
+  ))
+  cat("\n#### Time-at-risks (TARs) {#sec-char-tars} \n",
+      paste0(' - ',paste0(tars , collapse=' \n - ')), 
+      sep= '\n'
+  )
+
+
+```
+
+#### Covariate Settings {#sec-char-features}
+
+```{r, echo=FALSE, results = 'asis'}
+covariates <- CharacterizationModuleSettings$settings$aggregateCovariateSettings[[1]]$covariateSettings
+covariateDetails <- formatCovariateSettings(covariates)
+
+  reportTableFormat(
+    table = covariateDetails, 
+    groupBy = 'input', 
+    columns = defaultColumns(covariateDetails)
+    #caption = paste('covariate setting ', i)
+    )
+```
+
+### Time-to-event
+
+The timing of the outcomes relative to the target eras are calculated for all Targets (see @sec-char-tte-targets) and Outcomes (see @sec-char-tte-outcomes).  
+
+```{r, echo=FALSE, results = 'asis'}
+  targets = sapply(
+    CharacterizationModuleSettings$settings$timeToEventSettings[[1]]$targetIds, 
+    function(x){
+      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
+    }
+  )
+
+  outcomes = sapply(
+    CharacterizationModuleSettings$settings$timeToEventSettings[[1]]$outcomeIds, 
+        function(x){
+      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
+    }
+    )
+  
+  cat("#### Targets {#sec-char-tte-targets} \n",
+      paste0(' - ',paste0(targets , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+  cat("\n#### Outcomes {#sec-char-tte-outcomes} \n",
+      paste0(' - ',paste0(outcomes , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+
+
+```
+
+
+### Dechallenge Rechallenge
+
+For each Target (see @sec-char-dr-targets) and Outcome (see @sec-char-dr-outcomes) cmbination this calculates the number of patients in the target population with a dechallenge (when a target exposure era ends within decallengeStopInterval days of an outcome) in addition to the number of these that are fails (the outcome is recorded within dechallengeEvaluationWindow days after the target exposure era ends) and successful (the outcome is not recorded within dechallengeEvaluationWindow days after the target exposure era ends). Then for those with a successful dechallenge, rechallenges are counted based on whether an outcome occurs in a new target exposure era and a rechallenge fail is counted if the target exposure ends within decallengeStopInterval days of the outcome.
+
+```{r, echo=FALSE, results = 'asis'}
+  targets = sapply(
+    CharacterizationModuleSettings$settings$dechallengeRechallengeSettings[[1]]$targetCohortDefinitionIds, 
+    function(x){
+      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
+    }
+  )
+
+  outcomes = sapply(
+    CharacterizationModuleSettings$settings$dechallengeRechallengeSettings[[1]]$outcomeCohortDefinitionIds, 
+        function(x){
+      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
+    }
+    )
+  
+  cat("#### Targets {#sec-char-dr-targets} \n",
+      paste0(' - ',paste0(targets , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+  cat("\n#### Outcomes {#sec-char-dr-outcomes} \n",
+      paste0(' - ',paste0(outcomes , collapse=' \n - ')), 
+      sep= '\n'
+  )
+  
+cat("\n#### Parameters \n", sep ='\n')
+
+
+setTable <- getSettingsTable(
+  package = 'Characterization', 
+  functionName = 'createDechallengeRechallengeSettings',
+  settings = list(
+    dechallengeStopInterval = CharacterizationModuleSettings$settings$dechallengeRechallengeSettings[[1]]$dechallengeStopInterval,
+    dechallengeEvaluationWindow = CharacterizationModuleSettings$settings$dechallengeRechallengeSettings[[1]]$dechallengeEvaluationWindow
+  )
+)
+
+    reportTableFormat(
+      table = setTable, 
+      groupBy = 'input',
+      columns = defaultColumns(setTable),
+      caption = 'Parameters for dechallenge rechallange'
+    )
+    
+
+```
+

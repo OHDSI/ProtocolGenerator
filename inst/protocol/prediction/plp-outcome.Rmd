@@ -1,0 +1,10 @@
+---
+output: html_document
+---
+  
+#### Outcome
+
+```{r echo=FALSE, results='asis'}
+cat('The outcome ', cohortNames[which(PatientLevelPredictionModuleSettings$settings[[i]]$outcomeId == cohortIds)],' (see ', paste0('@sec-',which(PatientLevelPredictionModuleSettings$settings[[i]]$outcomeId == cohortIds)), ') occurring between target ', PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$startAnchor, '+', PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$riskWindowStart, ' days and target ', PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$endAnchor, ' + ', PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$riskWindowEnd, ' days.'
+    )
+```

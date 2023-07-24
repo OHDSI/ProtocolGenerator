@@ -1,0 +1,152 @@
+---
+title: "ASSURE Study Protocol"
+date: 2023-02-10
+date-format: short
+title-block-banner: true
+format:
+  html:
+    toc: true
+    toc-location: left
+    toc-depth: 6
+    toc-expand: 2
+    embed-resources: true
+params: 
+  jsonLocation: NULL
+  dataDiagnosticFolder: NULL
+  webAPI: 'https://api.ohdsi.org/WebAPI'
+---
+
+```{r echo=FALSE, hide = TRUE, include=FALSE}
+library(ProtocolGenerator)
+json <- ParallelLogger::loadSettingsFromJson(params$jsonLocation)
+modulesInJson <- unlist(lapply(json$moduleSpecifications, function(x) x$module))
+
+# need to finish this function below...
+cohortDetails <- ProtocolGenerator::getCohortDefinitionsFromJson(json)
+
+cohortDefinitions <- cohortDetails$cohortDefinitions
+cohortIds <- cohortDetails$cohortIds
+cohortNames <- cohortDetails$cohortNames
+subsetDefs <- cohortDetails$subsetDefs
+
+if("negativeControlOutcomes" %in% unlist(lapply(json$sharedResources, function(x) names(x)))){
+  
+  negativeControlInd <- which(unlist(lapply(json$sharedResources, function(x) "negativeControlOutcomes" %in% names(x)))) 
+  
+  negativeControlsTemp <- json$sharedResources[[negativeControlInd]]$negativeControlOutcomes
+  
+  negativeControls <- as.data.frame(do.call(rbind,lapply(negativeControlsTemp$negativeControlOutcomeCohortSet, function(x) x)))
+  
+  negativeControls$occurrenceType <- negativeControlsTemp$occurrenceType
+  negativeControls$detectOnDescendants <- negativeControlsTemp$detectOnDescendants
+  
+  
+}
+```
+
+# ABREVIATIONS
+
+```{r echo=FALSE}
+abb <- data.frame(rbind(
+  c("C","Comparator Cohort"),
+  c("CDM","Common Data Model"),
+  c("CM","Cohort Method"),
+  c("O","Outcome Cohort"),
+  c("OHDSI","Observational Health Data Sciences & Informatics"),
+  c("OMOP","Observational Medical Outcomes Partnership"),
+  c("PLP", "Patient Level Prediction"),
+  c("SCCS", "Self Controlled Case Series"),
+  c("T", "Target Cohort"),
+  c("TAR", "Time at Risk")
+))
+names(abb) <- c("Abbreviation","Phrase")
+abb <- abb[order(abb$Abbreviation),]
+reportTableFormat(
+  table = abb, 
+  caption = 'List of Abbreviations'
+  )
+```
+
+# DATA SOURCES
+
+The data sources used in this analysis will be determined empirically by evaluating the study inputs against pre-computed characterization results. This method generates a rough estimate determining which databases have the information necessary to observe both the outcomes and exposures of interest in the required populations. Only databases that pass data diagnostics will be used in the study.
+
+```{r echo=FALSE, results='asis'}
+if(!is.null(params$dataDiagnosticFolder)){
+
+  # Add db diagnostic criteria?
+  
+  cat(
+    "## Data Diagnostics Criteria \n", 
+    "\n Specifications will be provided for each of the target and comparator combinations. These specifications will be used, along with pre-computed characterization numbers, to estimate the number of persons in each database that satisfy each criterion. The minimum proportion across all criteria will be taken as the approximate maximum of the study sample size and the approximate minimum sample size will be determined by taking the minimum proportion between the number of persons with at least one of the target concepts and the number of persons with at least one of the comparator concepts and then multiplying that value with the proportion of persons that satisfy each additional criterion.  \n",
+    "## Data Diagnostics Results \n ",
+    "Add table. \n ",
+      sep = ' \n') 
+
+
+
+} 
+```
+
+# RESEARCH METHODS
+
+```{r results='asis', echo=FALSE}
+if("CohortIncidenceModule" %in% modulesInJson){
+  
+CohortIncidenceModuleSettings <- json$moduleSpecifications[[which("CohortIncidenceModule" == modulesInJson)]]
+result <- knitr::knit_child("cohort-incidence.qmd", quiet = TRUE, envir = environment())
+cat(result, sep = '\n')
+}
+      
+```
+
+```{r results='asis', echo=FALSE}
+if("CharacterizationModule" %in% modulesInJson){
+  
+CharacterizationModuleSettings <- json$moduleSpecifications[[which("CharacterizationModule" == modulesInJson)]]
+result <- knitr::knit_child("characterization.qmd", quiet = TRUE, envir = environment())
+      cat(result, sep = '\n')
+}
+      
+```
+
+```{r results='asis', echo=FALSE}
+if("CohortMethodModule" %in% modulesInJson){
+  
+cohortMethodModuleSettings <- json$moduleSpecifications[[which("CohortMethodModule" == modulesInJson)]]
+result <- knitr::knit_child("cohort-method.qmd", quiet = TRUE, envir = environment())
+      cat(result, sep = '\n')
+}
+      
+```
+
+```{r results='asis', echo=FALSE}
+if("SelfControlledCaseSeriesModule" %in% modulesInJson){
+  
+SelfControlledCaseSeriesModuleSettings <- json$moduleSpecifications[[which("SelfControlledCaseSeriesModule" == modulesInJson)]]
+result <- knitr::knit_child("self-control-case-series.qmd", quiet = TRUE, envir = environment())
+      cat(result, sep = '\n')
+}
+      
+```
+
+```{r results='asis', echo=FALSE}
+if("PatientLevelPredictionModule" %in% modulesInJson){
+  
+PatientLevelPredictionModuleSettings <- json$moduleSpecifications[[which("PatientLevelPredictionModule" == modulesInJson)]]
+result <- knitr::knit_child("patient-level-prediction.Rmd", quiet = TRUE, envir = environment())
+      cat(result, sep = '\n')
+}
+      
+```
+
+# APPENDIX
+
+```{r, child = "module-versions.Rmd"}
+```
+
+```{r, child = "cohorts.Rmd"}
+```
+
+```{r, child = "concepts.Rmd"}
+```

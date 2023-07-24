@@ -1,0 +1,39 @@
+Package: ProtocolGenerator
+Type: Package
+Title: Generate HTML OHDSI study protocols
+Version: 0.0.1.9000
+Date: 2023-6-20
+Authors@R: c(
+  person("Jenna", "Reps", email = "jreps@its.jnj.com", role = c("aut", "cre"))
+  )
+Maintainer: Jenna Reps <jreps@its.jnj.com>
+Description: Generate OHDSI study protocols in HTML format from a json specification.
+License: Apache License 2.0
+URL: https://ohdsi.github.io/ProtocolGenerator, https://github.com/OHDSI/ProtocolGenerator
+BugReports: https://github.com/OHDSI/ProtocolGenerator/issues
+VignetteBuilder: knitr
+Depends:
+  R (>= 3.3.0)
+Imports:
+  dplyr,
+  jsonlite,
+  quarto,
+  reactable,
+  rlang,
+  ROhdsiWebApi
+Suggests:
+  Characterization,
+  CohortIncidence,
+  CohortMethod,
+  Cyclops, 
+  keyring,
+  knitr,
+  markdown,
+  ParallelLogger,
+  PatientLevelPrediction,
+  remotes,
+  rmarkdown,
+  SelfControlledCaseSeries,
+  testthat
+RoxygenNote: 7.2.3
+Encoding: UTF-8

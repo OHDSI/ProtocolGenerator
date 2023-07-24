@@ -1,0 +1,84 @@
+---
+output: html_document
+---
+  
+#### Predictors
+
+**Candidate predictors**
+The predictors are determined using data recorded relative to the target cohort index date.  The settings `endDays` specifies the number of days relative to the target index that is the latest point in time for determining the covariates.  For example, an `endDays` of -1 means that no data recorded on index or after are used by the covariates (the covariates only use data recorded up to index-1 day).
+
+```{r, echo=FALSE, results = 'asis'}
+if(class(PatientLevelPredictionModuleSettings$settings[[i]]$covariateSettings) == 'covariateSettings'){
+  PatientLevelPredictionModuleSettings$settings[[i]]$covariateSettings <- list(PatientLevelPredictionModuleSettings$settings[[i]]$covariateSettings)
+}
+cat('\n There are ', length(PatientLevelPredictionModuleSettings$settings[[i]]$covariateSettings), ' covariate settings. \n')
+for(j in 1:length(PatientLevelPredictionModuleSettings$settings[[i]]$covariateSettings)){
+  
+   cat('\n Covariate Setting', j, '\n')
+  
+  covariateDetails <- formatCovariateSettings(PatientLevelPredictionModuleSettings$settings[[i]]$covariateSettings)
+  
+  
+print(
+  shiny::tagList(
+  reportTableFormat(
+    table = covariateDetails, 
+    groupBy = 'input',
+    columns = defaultColumns(covariateDetails)
+  )
+  )
+)
+  cat('\n \n')
+}
+```
+
+**Feature Engineering**
+```{r, echo=FALSE, results = 'asis'}
+if(class(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings) == 'featureEngineeringSettings'){
+  PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings <- list(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings)
+}
+if(!is.null(attr(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings[[1]],"fun"))){
+  if(attr(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings[[1]],"fun") != 'sameData'){
+  
+    cat('\n There are ', length(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings), ' feature engineering settings. \n')
+    for(i in 1:length(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings)){
+  
+      cat('\n The function ', attr(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings[[i]],"fun"), ' with inputs: \n')
+      feData <- data.frame(
+        name = names(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings), 
+        value = unlist(lapply(PatientLevelPredictionModuleSettings$settings[[i]]$featureEngineeringSettings, function(x) paste(x, sep = '', collapse='-')))
+        )
+  
+      print(
+        reportTableFormat(
+    table = feData , 
+    caption = paste('feature engineering setting ', i)
+  )
+  )
+      cat('\n \n')
+  
+    }
+  } else{
+  cat('\n None \n')  
+  }
+} else{
+  cat('\n None \n')  
+}
+```
+
+**Pre-processing**
+
+The following pre-processing were applied:
+
+
+```{r, echo=FALSE, results = 'asis'}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$preprocessSettings$normalize){
+  cat('\n - The data were normalized using the formula: value/maxValue . \n')
+}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$preprocessSettings$minFraction > 0){
+  cat('\n - Candidate predictors occuring in less than ', PatientLevelPredictionModuleSettings$settings[[i]]$preprocessSettings$minFraction*100,'\\% of patients in the target population were removed. \n')
+}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$preprocessSettings$removeRedundancy){
+  cat('\n - Candidate predictors that were redundant (completely correlated with another predictor) were removed.  When two predictors are completely correlated, the most common predictor is removed.  For example, if 60\\% of the target population were male and 40\\% were female, then the male gender predictor would be removed since it is redundant and more common. \n')
+}
+```

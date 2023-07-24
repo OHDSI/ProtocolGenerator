@@ -1,0 +1,44 @@
+---
+output: html_document
+---
+  
+## Cohorts  
+
+```{r echo=FALSE, results='asis'}
+for(i in 1:length(cohortDefinitions)){
+  cat('\n### ', cohortDefinitions[[i]]$cohortName, paste0('{#sec-',i,'}') ,'\n')
+  
+  markdown <- tryCatch(
+  {CirceR::cohortPrintFriendly(cohortDefinitions[[i]]$cohortDefinition)}, 
+  error = function(e) return('')
+)
+#markdown <- gsub('###', '####',markdown)
+cat(markdown)
+
+# add subset details
+if(!is.null(cohortDefinitions[[i]]$subsetDefinition)){
+  
+  # add the settings as a table
+  subsetTable <- jsonlite::fromJSON(
+    txt = cohortDetails$cohortDefinitions[[i]]$subsetDefinition
+    )$subsetOperator
+  
+  cat("\n#### Subset operator: \n")
+  
+  print(
+   htmltools::tagList(
+    reportTableFormat(
+      table = subsetTable
+    )
+   )
+ )
+}
+  
+}
+
+#json$sharedResources[[2]]$negativeControlOutcomes
+```
+
+
+
+

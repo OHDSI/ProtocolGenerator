@@ -1,0 +1,79 @@
+---
+output: html_document
+---
+  
+#### Participants
+
+```{r echo=FALSE, results='asis'}
+cat('The target population ', cohortNames[which(PatientLevelPredictionModuleSettings$settings[[i]]$targetId == cohortIds)],' see ', paste0('@sec-',which(PatientLevelPredictionModuleSettings$settings[[i]]$targetId == cohortIds)), ' for cohort details. \\n')
+```
+
+Additional inclusion criteria:
+```{r, echo=FALSE, results='asis'}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$firstExposureOnly){
+  cat('\n - Patients are only in the cohort once.  The earliest index date is used per patient. \n')
+}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$restrictPlpDataSettings$washoutPeriod > PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$washoutPeriod){
+  washout <- PatientLevelPredictionModuleSettings$settings[[i]]$restrictPlpDataSettings$washoutPeriod
+} else{
+  washout <- PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$washoutPeriod
+}
+if(!is.null(cohortDefinitions[[which(PatientLevelPredictionModuleSettings$settings[[i]]$targetId == cohortIds)]]$cohortDefinition)){
+  if(washout > ParallelLogger::convertJsonToSettings(cohortDefinitions[[which(PatientLevelPredictionModuleSettings$settings[[i]]$targetId == cohortIds)]]$cohortDefinition)$PrimaryCriteria$ObservationWindow[1]){
+    cat('\n - Patients with less than ',
+        washout,' days observation prior to index',
+        ' are excluded \n')
+  }
+}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$removeSubjectsWithPriorOutcome){
+  cat('\n - Patients with the outcome within ',
+      PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$priorOutcomeLookback,' days prior to index',
+      ' are excluded \n')
+}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$requireTimeAtRisk){
+  cat('\n - Patients who are lost to follow up within ',
+      PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$minTimeAtRisk,' days post index',
+      ' are excluded \n')
+  if(PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$includeAllOutcomes){
+    cat('\n - Except patients with the outcome who are lost to follow up within',
+        PatientLevelPredictionModuleSettings$settings[[i]]$populationSettings$minTimeAtRisk,' days post index',
+        ' (they are still included) \n')
+  }
+}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$restrictPlpDataSettings$studyStartDate != ""){
+  cat('\n - Restrict to patients with an index date on or after ',PatientLevelPredictionModuleSettings$settings[[i]]$restrictPlpDataSettings$studyStartDate,' \n')
+}
+if(PatientLevelPredictionModuleSettings$settings[[i]]$restrictPlpDataSettings$studyEndDate != ""){
+  cat('\n - Restrict to patients with an index date on or before ',PatientLevelPredictionModuleSettings$settings[[i]]$restrictPlpDataSettings$studyEndDate,' \n')
+}
+
+```
+
+**Sampling**
+  
+```{r, echo=FALSE, results='asis'}
+if(!is.null(PatientLevelPredictionModuleSettings$settings[[i]]$restrictPlpDataSettings$sampleSize)){
+  cat('\n Randomly sample ',PatientLevelPredictionModuleSettings$settings[[i]]$restrictPlpDataSettings$sampleSize,' patients from the target population \n')
+}
+if(!is.null(attr(PatientLevelPredictionModuleSettings$settings[[i]]$sampleSettings[[1]],"fun"))){
+  if(attr(PatientLevelPredictionModuleSettings$settings[[i]]$sampleSettings[[1]],"fun") == 'sameData'){
+    cat('\n No over/under-sampling of the patients based on class was done \n')
+  }
+  
+  if(attr(PatientLevelPredictionModuleSettings$settings[[i]]$sampleSettings[[1]],"fun") != 'sameData'){
+    cat('\n An over/under-sampling of the patients based on class was done using ',
+        attr(PatientLevelPredictionModuleSettings$settings[[i]]$sampleSettings[[1]],"fun"),' with the  settings: \n')
+    sampleDat <- data.frame(
+      names = names(PatientLevelPredictionModuleSettings$settings[[i]]$sampleSettings[[1]]),
+      values = unlist(lapply(PatientLevelPredictionModuleSettings$settings[[i]]$sampleSettings[[1]], function(x) paste(x, sep='-', collapse = '-')))
+    )
+    print(
+      reportTableFormat(
+        table = sampleDat, 
+        caption = paste('Sampling settings')
+      )
+    )
+    
+  }
+}
+```

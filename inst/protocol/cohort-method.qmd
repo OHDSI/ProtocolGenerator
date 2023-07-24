@@ -1,0 +1,323 @@
+---
+output: html_document
+---
+
+```{r, echo=FALSE, results = 'hide', include=FALSE}
+library(CohortMethod)
+package <- 'CohortMethod'
+```
+
+## Cohort Method 
+
+::: {.panel-tabset}
+
+### Overview
+
+In this study a total of `r nrow(unique(do.call(rbind,lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList, function(x) merge(data.frame(targetId = x$targetId, comparatorId = x$comparatorId), data.frame( outcomeId = unlist(lapply(x$outcomes, function(outcome){outcome$outcomeId[outcome$outcomeOfInterest]})) ) )))))*length(cohortMethodModuleSettings$settings$cmAnalysisList)` effect estimates will be investigated per database using the Cohort Method approach. Specifically, the study consists of a total of `r nrow(unique(do.call(rbind,lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList, function(x) merge(data.frame(targetId = x$targetId, comparatorId = x$comparatorId), data.frame( outcomeId = unlist(lapply(x$outcomes, function(outcome){outcome$outcomeId[outcome$outcomeOfInterest]})) ) )))))` target comparator outcome combinations (see @sec-cm-tco) to be evaluated across `r length(cohortMethodModuleSettings$settings$cmAnalysisList)` different analyses settings (see @sec-cm-analyses).
+
+### Target Comparator Outcomes {#sec-cm-tco}
+```{r, echo=FALSE, results = 'asis'}
+
+for( i in 1:length(cohortMethodModuleSettings$settings$targetComparatorOutcomesList)){
+cat(paste0('\n#### Setting ', i, ' \n'), sep= '\n')
+  
+  cat(
+    paste0('\n##### Target Comparator Outcomes'), 
+    
+    "\n A relative effect for the risk of the outcome will be calculated for the target drug compared to the comparator drug for each target, comparator and outcome triplet in the table below.",
+           
+           
+           sep= '\n'
+    )
+  
+    outcomeIds <- unlist(lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) x$outcomeId))
+    
+    priorOutcomeLookbacks <- do.call('rbind', lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) c(x$outcomeId, x$priorOutcomeLookback)))
+      
+    colnames(priorOutcomeLookbacks) <- c('outcomeId','priorOutcomeLookback')
+  priorOutcomeLookbacks <- as.data.frame(priorOutcomeLookbacks)
+  
+  outcomeOfInterest <- unlist(lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) x$outcomeOfInterest))
+  
+  outcomes <- outcomeIds[outcomeOfInterest]
+  negative <- priorOutcomeLookbacks[!outcomeOfInterest,]
+  rownames(negative) <- NULL
+  
+  priorOutcomeLookback <- do.call(rbind,lapply(outcomes, function(x){priorOutcomeLookbacks[priorOutcomeLookbacks$outcomeId == x,]}))
+    
+  tco <- data.frame(
+    
+    Target = rep(paste0(cohortNames[cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$targetId==cohortIds],' <a href="#sec-',which(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$targetId==cohortIds),'" target="_blank">(View)</a>'),length(outcomes)),
+
+    Comparison = rep(paste0(cohortNames[cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$comparatorId==cohortIds], ' <a href="#sec-',which(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$comparatorId==cohortIds), '" target="_blank">(View)</a>'), length(outcomes)),
+    
+    Outcome = paste0(cohortNames[cohortIds %in% outcomes], ' <a href="#sec-',
+                      which(cohortIds %in% outcomes), '" target="_blank">(View)</a>'),
+    
+    priorOutcomeLookback = priorOutcomeLookback$priorOutcomeLookback
+  )
+  
+  print(
+    htmltools::tagList(
+    reportTableFormat(
+      table = tco, 
+      groupBy = NULL, #c('Target', 'Comparison'), 
+      columns = list(
+        Target = reactable::colDef(
+          html = TRUE, 
+          filterable = T
+          ),
+    Comparison = reactable::colDef(
+          html = TRUE,
+          filterable = T
+    ),
+    Outcome = reactable::colDef(
+          html = TRUE,
+          filterable = T
+    )
+ 
+      )
+      #caption = paste('Target Comparator Outcomes for setting ',i)
+    )
+    )
+  )
+  
+  if(length(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$excludedCovariateConceptIds) > 0){
+  cat('\n##### Excluded Covariate Concept Ids \n') #{.tabset .tabset-pills}
+    concepts <- getConcepts(
+    conceptIds = cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$excludedCovariateConceptIds, 
+    baseUrl = params$webAPI
+    )
+  
+ cat('\n###### Standard \n')
+ print(
+   htmltools::tagList(
+    reportTableFormat(
+      table = concepts$standard %>% 
+        dplyr::select("conceptId","conceptName", "domainId", "vocabularyId","conceptClassId"),
+      columns = list(
+        conceptName = reactable::colDef(filterable = T),
+        domainId = reactable::colDef(filterable = T),
+        vocabularyId = reactable::colDef(filterable = T)
+      )
+    )
+   )
+ )
+
+ cat('\n###### Source \n')
+  print(
+   htmltools::tagList(
+ reportTableFormat(
+      table = concepts$source %>% 
+        dplyr::select("conceptId","conceptName", "domainId", "vocabularyId", "conceptClassId"),
+      columns = list(
+        conceptName = reactable::colDef(filterable = T),
+        domainId = reactable::colDef(filterable = T),
+        vocabularyId = reactable::colDef(filterable = T)
+      )
+    )
+   )
+  )
+  }
+  
+  cat('\n##### Negative Controls \n')
+  
+  cat(paste0('A total of ',nrow(negative),' negative controls were included. \n'))
+  
+  print(
+    htmltools::tagList(
+    reportTableFormat(
+      table = merge(
+        negative, 
+        negativeControls, 
+        by.y = 'cohortId', 
+        by.x='outcomeId', 
+        all.x = T
+        ), 
+      groupBy = NULL, 
+      columns = NULL
+      #caption = paste('Negative controls for setting ',i)
+    )
+  )
+  )
+    
+}
+
+```
+
+### Analysis Settings {#sec-cm-analyses}
+
+```{r, echo=FALSE, results = 'asis'}
+
+for(i in 1:length(cohortMethodModuleSettings$settings$cmAnalysisList)){
+  
+  analysisSetting <- cohortMethodModuleSettings$settings$cmAnalysisList[[i]]
+  
+  cat(
+    paste0('\n#### Analysis ', analysisSetting$analysisId,': ', analysisSetting$description, ' \n'), 
+    
+    '##### Get Data Arguments' ,
+    
+    getHelpText(
+    package = 'CohortMethod',
+    functionName = 'getDbCohortMethodData',
+    input = NULL
+),
+
+    sep = '\n'
+    
+    )
+  
+  
+  
+  covariateSettings <- analysisSetting$getDbCohortMethodDataArgs$covariateSettings
+  
+  analysisSetting$getDbCohortMethodDataArgs$covariateSettings <- NULL
+  
+  extractSettings <- getSettingsTable(
+  package, 
+  functionName = 'getDbCohortMethodData', 
+  settings = analysisSetting$getDbCohortMethodDataArgs
+)
+  
+  covariateDetails <- formatCovariateSettings(covariateSettings)
+  
+  print(
+    shiny::tagList(
+  reportTableFormat(
+      table = rbind(
+        extractSettings,
+        covariateDetails
+        ),
+      groupBy = 'input', 
+      columns = defaultColumns(covariateDetails)
+    )
+    )
+  )
+
+# print tables for the remaining components
+cohortMethodComponents <- names(analysisSetting)
+cohortMethodComponents <- cohortMethodComponents[!cohortMethodComponents %in% c('analysisId','description','getDbCohortMethodDataArgs', 'computeCovariateBalanceArgs')]
+
+for(settingName in cohortMethodComponents){
+  cat(paste0('\n##### ',settingName,' Settings \n'))
+  
+  functionName <- getFunctionFromArgName(package, settingName)[1]
+  
+  if(!is.na(functionName)){ # what to do when NA?
+  
+  cat(
+    getHelpText(
+    package = package,
+    functionName = functionName,
+    input = NULL
+), sep = '\n')
+  
+descAndDefault <- getAllHelpDetails(package, functionName)
+settingDf <- getSettingsTable(
+  package = package, 
+  functionName = functionName, 
+  settings = cohortMethodModuleSettings$settings$cmAnalysisList[[i]][[settingName]]
+  )
+
+  print(
+    shiny::tagList(
+    reportTableFormat(
+      table = settingDf,
+      groupBy = "input",
+    columns = defaultColumns(settingDf)
+    )
+  )
+  )
+  }
+  
+}
+
+# manually adding computeCovariateBalanceArgs
+cat(paste0('\n##### computeCovariateBalanceArgs Settings \n'))
+  settingName <- 'computeCovariateBalanceArgs'
+  functionName <- getFunctionFromArgName(package, settingName)[1]
+  
+  if(!is.na(functionName)){ # what to do when NA?
+  
+  cat(
+    getHelpText(
+    package = package,
+    functionName = functionName,
+    input = NULL
+), sep = '\n')
+    
+    covariateFilter <- cohortMethodModuleSettings$settings$cmAnalysisList[[i]][[settingName]]$covariateFilter
+    cohortMethodModuleSettings$settings$cmAnalysisList[[i]][[settingName]]$covariateFilter <- NULL
+  
+descAndDefault <- getAllHelpDetails(package, functionName)
+settingDf <- getSettingsTable(
+  package = package, 
+  functionName = functionName, 
+  settings = cohortMethodModuleSettings$settings$cmAnalysisList[[i]][[settingName]]
+  )
+
+  print(
+    shiny::tagList(
+    reportTableFormat(
+      table = settingDf,
+      groupBy = "input",
+    columns = defaultColumns(settingDf)
+    )
+  )
+  )
+  
+  if(!is.null(covariateFilter)){
+    cat("\n covariateFilter Settings: \n")
+    print(
+    shiny::tagList(
+    reportTableFormat(
+      table = covariateFilter
+    )
+    )
+    )
+  }
+  
+  }
+
+
+  
+}
+
+
+```
+
+### Global Settings
+
+The following settings are used when running the analysis and apply to all CohortMethod analyses.
+
+```{r, echo=FALSE, results = 'asis'}
+
+    reportTableFormat(
+      table = data.frame(
+        input = c('refitPsForEveryOutcome','refitPsForEveryStudyPopulation'),
+        description = c(
+          getHelpText(
+    package = package,
+    functionName = 'runCmAnalyses',
+    input = 'refitPsForEveryOutcome'
+), 
+getHelpText(
+    package = package,
+    functionName = 'runCmAnalyses',
+    input = 'refitPsForEveryStudyPopulation'
+)
+),
+        value = c(
+          cohortMethodModuleSettings$settings$refitPsForEveryOutcome,
+          cohortMethodModuleSettings$settings$refitPsForEveryStudyPopulation
+        )
+    ),
+    groupBy = NULL, columns = NULL
+    #caption = paste('Global settings for Cohort Method ')
+    )
+  
+
+```
+:::
+

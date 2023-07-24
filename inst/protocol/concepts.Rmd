@@ -1,0 +1,77 @@
+---
+output: html_document
+---
+  
+## Concept sets 
+
+```{r echo=FALSE, results='asis'}
+
+printedNames <- c()
+for(i in 1:length(cohortDefinitions)){
+conceptSets <- ParallelLogger::convertJsonToSettings(cohortDefinitions[[i]]$cohortDefinition)$ConceptSets
+
+for(j in 1:length(conceptSets)){
+  
+  if(!conceptSets[[j]]$name %in% printedNames){
+      cat('\n### ', conceptSets[[j]]$name, '\n')
+    
+    # how to include desc?
+    conceptDf <- data.frame(
+    conceptId = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$concept$CONCEPT_ID)),
+    isExcluded = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$isExcluded)),
+    includeDescendants = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$includeDescendants)),
+    includeMapped = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$includeMapped))
+  )
+    
+    concepts <- getConcepts(
+    conceptIds = conceptDf$conceptId, 
+    baseUrl = params$webAPI
+    )
+    
+ cat("\n::: panel-tabset\n")
+ cat('\n#### Concept Set \n')
+ print(
+   htmltools::tagList(
+    reportTableFormat(
+      table = merge(concepts$standard, conceptDf) %>% 
+        dplyr::select("conceptId","conceptName", "domainId", "vocabularyId","conceptClassId", "includeDescendants", "isExcluded", "includeMapped"),
+      columns = list(
+        conceptName = reactable::colDef(filterable = T),
+        domainId = reactable::colDef(filterable = T),
+        vocabularyId = reactable::colDef(filterable = T)
+      )
+    )
+   )
+ )
+
+ cat('\n#### Source Codes \n')
+ # currently not based on include, descent and mapped!
+  print(
+   htmltools::tagList(
+ reportTableFormat(
+      table = concepts$source %>% 
+        dplyr::select("conceptId","conceptName", "domainId", "vocabularyId", "conceptClassId"),
+      columns = list(
+        conceptName = reactable::colDef(filterable = T),
+        domainId = reactable::colDef(filterable = T),
+        vocabularyId = reactable::colDef(filterable = T)
+      )
+    )
+   )
+  )
+ cat("\n:::\n")
+    
+
+    printedNames <- c(printedNames, conceptSets[[j]]$name)
+  
+}
+}
+  
+}
+
+#json$sharedResources[[2]]$negativeControlOutcomes
+```
+
+
+
+

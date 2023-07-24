@@ -1,0 +1,89 @@
+---
+output: html_document
+---
+  
+## PatientLevelPrediction
+
+::: {.panel-tabset}
+
+### Overview
+
+A total of ``r length(PatientLevelPredictionModuleSettings$settings)`` patient level prediction models will be developed. 
+
+```{r, echo=FALSE, result = 'asis'}
+
+targetIds <- unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$targetId))
+outcomeIds <- unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$outcomeId))
+
+predictionSummary <- data.frame(
+  model_design = 1:length(PatientLevelPredictionModuleSettings$setting),
+  target = sapply(targetIds, function(x) cohortNames[x==cohortIds]),
+  outcome = sapply(outcomeIds, function(x) cohortNames[x==cohortIds]),
+  timeAtRisk = paste0(
+    unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$populationSettings$startAnchor)), 
+    ' + ',
+    unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$populationSettings$riskWindowStart)),
+    ' - ',
+    unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$populationSettings$endAnchor)), 
+    ' + ',
+    unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$populationSettings$riskWindowEnd))
+    )#,
+  #view = paste0('#sec-model-design-',1:length(PatientLevelPredictionModuleSettings$setting))
+  
+) #%>%
+  #dplyr::mutate(
+   # analysis = htmltools::tags$a(href = view, target = "_blank", view)
+    #analysis = kableExtra::cell_spec(row.names(.), "html", link = view)
+    #) #%>%
+  #dplyr::select(-"view")
+
+reportTableFormat(
+  table = predictionSummary, 
+  #columns = list(
+  #   view = reactable::colDef(
+  #     cell = function(value) {
+  #    htmltools::tags$a(href = value, target = "_blank", 'View')
+  #  }
+  #  )
+  #),
+  caption = 'Overview of prediction models developed {#tbl-prediction-summary}'
+  ) 
+  
+```
+
+### Output
+
+The following are the standardized metrics used to evaluate patient-level prediction models.
+
+```{r, echo=FALSE, result = 'asis'}
+modelEvaluation <- data.frame(rbind(
+    c("AUROC", "Discrimination", "The Area Under the Receiver Operating Characteristic curve is a common discrimination metric.  It corresponds to the probability that a randomly selected patient with the outcome is assigned a higher risk by the model than a randomly selected patients without the outcome."),
+    
+    c("AUPRC", "Discrimination", "The Area Under the Precision Recall curve is a common discrimination metric that provides a useful insight when the outcome is rare."), 
+    
+    c("Calibration-in-the-large", "Calibration" , "A measure of how well the predicted risk matches the observed risk on average.  It compares the mean predicted risk for the whole popualtion (the model's predicted risk) with the observed risk (the true risk)"),
+    
+  c("E-statistic", "Calibration" , "A measure corresponding to the average difference between the true risk and the predicted risk.")
+    
+    )
+  )
+  names(modelEvaluation) <- c("Name", "Type","Description")
+  row.names(modelEvaluation) <- NULL
+  data <- modelEvaluation[order(modelEvaluation$Type),]
+  
+  reportTableFormat(
+    table = data, 
+    caption = 'Prediction Metrics'
+  )
+  
+  
+```
+
+```{r results='asis', echo=FALSE}
+    for (i in 1:length(PatientLevelPredictionModuleSettings$settings)) {
+      modelDesign <- knitr::knit_child("prediction/model-design.Rmd", quiet = TRUE, envir = environment())
+      cat(modelDesign, sep = '\n')
+    }
+```
+
+:::

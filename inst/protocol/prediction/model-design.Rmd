@@ -1,0 +1,16 @@
+
+```{r echo=FALSE, results='asis'}
+cat('\n### Model Design ', i, paste0(' {#sec-model-design-',i,'}'),' \n')
+```
+
+```{r, child = "prediction/plp-participants.Rmd"}
+```
+
+```{r, child = "prediction/plp-outcome.Rmd"}
+```
+
+```{r, child = "prediction/plp-predictors.Rmd"}
+```
+
+```{r, child = "prediction/plp-analysis.Rmd"}
+```
