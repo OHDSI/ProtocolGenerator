@@ -20,7 +20,20 @@ remotes::install_github('ohdsi/ProtocolGenerator')
 
 library(ProtocolGenerator)
 
-# add code
+# to run the protocol generator with a demo json specification
+test <- generateProtocol(
+  jsonLocation = getDemoLoc(),
+  webAPI = 'https://api.ohdsi.org/WebAPI',
+  outputLocation = './protocol'
+)
+
+# to run with your own json spec 
+test <- generateProtocol(
+  jsonLocation = '<insert location to json specification file>',
+  webAPI = 'https://api.ohdsi.org/WebAPI',
+  outputLocation = './protocol'
+)
+
 
 ```
 
