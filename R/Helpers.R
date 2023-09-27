@@ -46,7 +46,7 @@ getCohortDefinitionsFromJson <- function(
   subSetDefsNice <- data.frame(
     subsetName = unlist(
       lapply(1:length(subsetDefs), function(i){
-        paste0(jsonlite::fromJSON(subsetDefs[1])$subsetOperators$name, collapse = ' - ')
+        paste0(jsonlite::fromJSON(subsetDefs[i])$subsetOperators$name, collapse = ' - ')
       })
     ),
     subsetId = unlist(
