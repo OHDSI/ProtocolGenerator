@@ -5,11 +5,12 @@ output: html_document
 ## Concept sets 
 
 ```{r echo=FALSE, results='asis'}
-
+library(dplyr) # need to check why this is needed?
 printedNames <- c()
 for(i in 1:length(cohortDefinitions)){
 conceptSets <- ParallelLogger::convertJsonToSettings(cohortDefinitions[[i]]$cohortDefinition)$ConceptSets
 
+if(length(conceptSets)>0){
 for(j in 1:length(conceptSets)){
   
   if(!conceptSets[[j]]$name %in% printedNames){
@@ -66,6 +67,7 @@ for(j in 1:length(conceptSets)){
   
 }
 }
+} # end check for a concept in the definition
   
 }
 

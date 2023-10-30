@@ -6,9 +6,7 @@ output: html_document
 
 ### Overview
 
-A total of ``r do.call(prod, lapply(CohortIncidenceModuleSettings$settings$irDesign$analysisList, function(x){length(x[[1]])*length(x[[2]])*length(x[[3]])}))`` incidence rates will be developed for all combinations or Targets (see @sec-incidence-targets), Outcomes (see @sec-incidence-outcomes) and TARs (see @sec-incidence-tars). 
-
-### Analyses
+A total of ``r do.call(sum, lapply(CohortIncidenceModuleSettings$settings$irDesign$analysisList, function(x){length(x[[1]])*length(x[[2]])*length(x[[3]])}))`` incidence rates will be developed across ``r length(CohortIncidenceModuleSettings$settings$irDesign$analysisList)`` different analyses, see @sec-incidence-analysis-1 - @sec-incidence-analysis-end .
 
 ```{r, echo=FALSE, results = 'asis'}
 
@@ -19,7 +17,7 @@ getTarString <- function(tarDefs, tarId){
     return(paste0('(',res$start$dateField ,' + ', res$start$offset, ') - (', res$end$dateField, ' + ', res$end$offset, ')'))
 }
 
-i <- 1
+for(i in 1:length(CohortIncidenceModuleSettings$settings$irDesign$analysisList)){
 
   targetIds <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$targets
   
@@ -48,22 +46,30 @@ i <- 1
   
   tars <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$tars
   
-  cat("#### Targets {#sec-incidence-targets} \n",
+  cat(
+    paste0(
+      "\n### Analysis ", i, "{#sec-incidence-analysis-",
+      ifelse(i != length(CohortIncidenceModuleSettings$settings$irDesign$analysisList), i, 'end'),
+      "} \n")
+    )
+
+  cat("\n#### Targets ",
       paste0(' - ',paste0(targets , collapse=' \n - ')), 
       sep= '\n'
   )
   
-  cat("\n#### Outcomes {#sec-incidence-outcomes} \n",
+  cat("\n#### Outcomes \n",
       paste0(' - ',paste0(outcomes , collapse=' \n - ')), 
       sep= '\n'
   )
   
-  cat("\n#### Time-at-risks (TARs) {#sec-incidence-tars} \n",
+  cat("\n#### Time-at-risks (TARs) \n",
       paste0(' - ',paste0(sapply(tars, function(x){getTarString(tarDefs, x)}) , collapse=' \n - ')), 
       sep= '\n'
   )
+}
   
-   cat("\n#### Stratification \n", sep ='\n')
+   cat("\n### Stratification \n", sep ='\n')
    
    strataTable <- getSettingsTable(
   package = 'CohortIncidence', 
@@ -72,12 +78,13 @@ i <- 1
   settings = as.list(sapply(CohortIncidenceModuleSettings$settings$irDesign$strataSettings, function(x) paste(x, sep = ',', collapse = ','))) 
 )
 
-    reportTableFormat(
+      reportTableFormat(
       table = strataTable, 
       groupBy = 'input',
       columns = defaultColumns(strataTable),
       caption = 'Stratification settings'
       )
+
       
   
 ```
