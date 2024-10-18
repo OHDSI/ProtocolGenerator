@@ -142,9 +142,6 @@ result <- knitr::knit_child("patient-level-prediction.Rmd", quiet = TRUE, envir 
 
 # APPENDIX
 
-```{r, child = "module-versions.Rmd"}
-```
-
 ```{r, child = "cohorts.Rmd"}
 ```
 

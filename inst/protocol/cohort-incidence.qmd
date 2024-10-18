@@ -6,7 +6,7 @@ output: html_document
 
 ### Overview
 
-A total of ``r do.call(sum, lapply(CohortIncidenceModuleSettings$settings$irDesign$analysisList, function(x){length(x[[1]])*length(x[[2]])*length(x[[3]])}))`` incidence rates will be developed across ``r length(CohortIncidenceModuleSettings$settings$irDesign$analysisList)`` different analyses, see @sec-incidence-analysis-1 - @sec-incidence-analysis-end .
+A total of ``r do.call(sum, lapply(CohortIncidenceModuleSettings$settings$irDesign$analysisList, function(x){length(x[[1]])*length(x[[2]])*length(x[[3]])}))`` incidence rates will be developed across ``r length(CohortIncidenceModuleSettings$settings$irDesign$analysisList)`` different analyses.
 
 ```{r, echo=FALSE, results = 'asis'}
 
@@ -20,6 +20,9 @@ getTarString <- function(tarDefs, tarId){
 for(i in 1:length(CohortIncidenceModuleSettings$settings$irDesign$analysisList)){
 
   targetIds <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$targets
+  #updated for new CI
+  targetIds <- unlist(lapply(targetIds, function(id) CohortIncidenceModuleSettings$settings$irDesign$targetDefs[[id]]$id))
+  
   
   # this is now the ci cohort ids not the main cohort ids
   outcomeIdsCI <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$outcomes

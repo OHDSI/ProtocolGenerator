@@ -10,14 +10,14 @@ Differences in covariate (see @sec-char-features) mean values between the target
 
 ```{r, echo=FALSE, results = 'asis'}
   targets = sapply(
-    CharacterizationModuleSettings$settings$aggregateCovariateSettings[[1]]$targetIds, 
+    CharacterizationModuleSettings$settings$analysis$aggregateCovariateSettings[[1]]$targetIds, 
     function(x){
       paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
     }
   )
 
   outcomes = sapply(
-    CharacterizationModuleSettings$settings$aggregateCovariateSettings[[1]]$outcomeIds, 
+    CharacterizationModuleSettings$settings$analysis$aggregateCovariateSettings[[1]]$outcomeIds, 
         function(x){
       paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
     }
@@ -34,7 +34,7 @@ Differences in covariate (see @sec-char-features) mean values between the target
   )
   
   tars <- unlist(lapply(
-    CharacterizationModuleSettings$settings$aggregateCovariateSettings, function(x){
+    CharacterizationModuleSettings$settings$analysis$aggregateCovariateSettings, function(x){
       paste0('(',
              x$startAnchor, '+', x$riskWindowStart, 
              ')-(',
@@ -53,7 +53,7 @@ Differences in covariate (see @sec-char-features) mean values between the target
 #### Covariate Settings {#sec-char-features}
 
 ```{r, echo=FALSE, results = 'asis'}
-covariates <- CharacterizationModuleSettings$settings$aggregateCovariateSettings[[1]]$covariateSettings
+covariates <- CharacterizationModuleSettings$settings$analysis$aggregateCovariateSettings[[1]]$covariateSettings
 covariateDetails <- formatCovariateSettings(covariates)
 
   reportTableFormat(
@@ -70,14 +70,14 @@ The timing of the outcomes relative to the target eras are calculated for all Ta
 
 ```{r, echo=FALSE, results = 'asis'}
   targets = sapply(
-    CharacterizationModuleSettings$settings$timeToEventSettings[[1]]$targetIds, 
+    CharacterizationModuleSettings$settings$analysis$timeToEventSettings[[1]]$targetIds, 
     function(x){
       paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
     }
   )
 
   outcomes = sapply(
-    CharacterizationModuleSettings$settings$timeToEventSettings[[1]]$outcomeIds, 
+    CharacterizationModuleSettings$settings$analysis$timeToEventSettings[[1]]$outcomeIds, 
         function(x){
       paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
     }
@@ -104,14 +104,14 @@ For each Target (see @sec-char-dr-targets) and Outcome (see @sec-char-dr-outcome
 
 ```{r, echo=FALSE, results = 'asis'}
   targets = sapply(
-    CharacterizationModuleSettings$settings$dechallengeRechallengeSettings[[1]]$targetCohortDefinitionIds, 
+    CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$targetCohortDefinitionIds, 
     function(x){
       paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
     }
   )
 
   outcomes = sapply(
-    CharacterizationModuleSettings$settings$dechallengeRechallengeSettings[[1]]$outcomeCohortDefinitionIds, 
+    CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$outcomeCohortDefinitionIds, 
         function(x){
       paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
     }
@@ -134,8 +134,8 @@ setTable <- getSettingsTable(
   package = 'Characterization', 
   functionName = 'createDechallengeRechallengeSettings',
   settings = list(
-    dechallengeStopInterval = CharacterizationModuleSettings$settings$dechallengeRechallengeSettings[[1]]$dechallengeStopInterval,
-    dechallengeEvaluationWindow = CharacterizationModuleSettings$settings$dechallengeRechallengeSettings[[1]]$dechallengeEvaluationWindow
+    dechallengeStopInterval = CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$dechallengeStopInterval,
+    dechallengeEvaluationWindow = CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$dechallengeEvaluationWindow
   )
 )
 

@@ -14,7 +14,6 @@ if(length(conceptSets)>0){
 for(j in 1:length(conceptSets)){
   
   if(!conceptSets[[j]]$name %in% printedNames){
-      cat('\n### ', conceptSets[[j]]$name, '\n')
     
     # how to include desc?
     conceptDf <- data.frame(
@@ -23,7 +22,10 @@ for(j in 1:length(conceptSets)){
     includeDescendants = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$includeDescendants)),
     includeMapped = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$includeMapped))
   )
-    
+    if(length(conceptDf$conceptId)>0){
+      
+      cat('\n### ', conceptSets[[j]]$name, '\n')
+      
     concepts <- getConcepts(
     conceptIds = conceptDf$conceptId, 
     baseUrl = params$webAPI
@@ -69,6 +71,8 @@ for(j in 1:length(conceptSets)){
 }
 } # end check for a concept in the definition
   
+}
+
 }
 
 #json$sharedResources[[2]]$negativeControlOutcomes

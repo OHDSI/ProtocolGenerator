@@ -8,25 +8,25 @@ output: html_document
 
 ### Overview
 
-A total of ``r length(PatientLevelPredictionModuleSettings$settings)`` patient level prediction models will be developed. 
+A total of ``r length(PatientLevelPredictionModuleSettings$settings$modelDesignList)`` patient level prediction models will be developed. 
 
 ```{r, echo=FALSE, result = 'asis'}
 
-targetIds <- unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$targetId))
-outcomeIds <- unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$outcomeId))
+targetIds <- unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$targetId))
+outcomeIds <- unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$outcomeId))
 
 predictionSummary <- data.frame(
-  model_design = 1:length(PatientLevelPredictionModuleSettings$setting),
+  model_design = 1:length(PatientLevelPredictionModuleSettings$setting$modelDesignList),
   target = sapply(targetIds, function(x) cohortNames[x==cohortIds]),
   outcome = sapply(outcomeIds, function(x) cohortNames[x==cohortIds]),
   timeAtRisk = paste0(
-    unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$populationSettings$startAnchor)), 
+    unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$populationSettings$startAnchor)), 
     ' + ',
-    unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$populationSettings$riskWindowStart)),
+    unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$populationSettings$riskWindowStart)),
     ' - ',
-    unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$populationSettings$endAnchor)), 
+    unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$populationSettings$endAnchor)), 
     ' + ',
-    unlist(lapply(PatientLevelPredictionModuleSettings$settings, function(x) x$populationSettings$riskWindowEnd))
+    unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$populationSettings$riskWindowEnd))
     )#,
   #view = paste0('#sec-model-design-',1:length(PatientLevelPredictionModuleSettings$setting))
   
@@ -80,7 +80,8 @@ modelEvaluation <- data.frame(rbind(
 ```
 
 ```{r results='asis', echo=FALSE}
-    for (i in 1:length(PatientLevelPredictionModuleSettings$settings)) {
+    for (i in 1:length(PatientLevelPredictionModuleSettings$settings$modelDesignList)) {
+      modelDesignSetting <- PatientLevelPredictionModuleSettings$settings$modelDesignList[[i]]
       modelDesign <- knitr::knit_child("prediction/model-design.Rmd", quiet = TRUE, envir = environment())
       cat(modelDesign, sep = '\n')
     }

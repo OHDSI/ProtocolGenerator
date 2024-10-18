@@ -4,22 +4,22 @@ output: html_document
   
 #### Analysis
 
-The model that will be trained is a ``r attr(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$param,'settings')$name `` that uses the `PatientLevelPrediction` function ``r PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$fitFunction `` to fit the model.
+The model that will be trained is a ``r attr(modelDesignSetting$modelSettings$param,'settings')$name `` that uses the `PatientLevelPrediction` function ``r modelDesignSetting$modelSettings$fitFunction `` to fit the model.
 
 ```{r, echo=FALSE}
-if(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$fitFunction == "fitCyclopsModel"){
+if(modelDesignSetting$modelSettings$fitFunction == "fitCyclopsModel"){
  parameters <- data.frame(
-   name = names(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$param),
+   name = names(modelDesignSetting$modelSettings$param),
    value = unlist(
-     lapply(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$param, function(x) paste(names(x), x, collapse = '-', sep=':'))
+     lapply(modelDesignSetting$modelSettings$param, function(x) paste(names(x), x, collapse = '-', sep=':'))
    )
  )
  
  settings <- data.frame(
-   name = names(attr(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$param,"settings")),
+   name = names(attr(modelDesignSetting$modelSettings$param,"settings")),
    value = unlist(
      lapply(
-       attr(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$param,"settings"), 
+       attr(modelDesignSetting$modelSettings$param,"settings"), 
        function(x) paste0(names(x), x, collapse = ':', sep=' ')
             )
      )
@@ -28,17 +28,17 @@ if(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$fitFunction 
 } else{
    parameters <- 
        do.call('rbind', lapply(
-       PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$param, 
+       modelDesignSetting$modelSettings$param, 
        function(x){
          unlist(lapply(x, function(x) paste0(x, sep=' ', collapse=':')))
        })
      )
  
  settings <- data.frame(
-   name = names(attr(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$param,"settings")),
+   name = names(attr(modelDesignSetting$modelSettings$param,"settings")),
    value = unlist(
      lapply(
-       attr(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$param,"settings"), 
+       attr(modelDesignSetting$modelSettings$param,"settings"), 
        function(x) paste0(names(x), x, collapse = '-', sep='')
             )
      )
@@ -49,7 +49,7 @@ if(PatientLevelPredictionModuleSettings$settings[[i]]$modelSettings$fitFunction 
 
 **Cross-validation settings**
 
-The cross validation settings are to use ``r PatientLevelPredictionModuleSettings$settings[[i]]$splitSettings$nfold `` folds in the training data that are partitioned using the ``r attr(PatientLevelPredictionModuleSettings$settings[[i]]$splitSettings,"fun") `` function and consist of ``r PatientLevelPredictionModuleSettings$settings[[i]]$splitSettings$train*100 `` \% of the complete data.  The seed used for splitting the data is ``r PatientLevelPredictionModuleSettings$settings[[i]]$splitSettings$seed ``.
+The cross validation settings are to use ``r modelDesignSetting$splitSettings$nfold `` folds in the training data that are partitioned using the ``r attr(modelDesignSetting$splitSettings,"fun") `` function and consist of ``r modelDesignSetting$splitSettings$train*100 `` \% of the complete data.  The seed used for splitting the data is ``r modelDesignSetting$splitSettings$seed ``.
 
 **Hyper-parameter search**
 
@@ -79,4 +79,4 @@ print(
 
 **Internal validation**
 
-The model will be assessed internally using a test set that consists of ``r PatientLevelPredictionModuleSettings$settings[[i]]$splitSettings$test*100`` \% of the complete data.
+The model will be assessed internally using a test set that consists of ``r modelDesignSetting$splitSettings$test*100`` \% of the complete data.
