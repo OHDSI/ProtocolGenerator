@@ -21,8 +21,7 @@ for(i in 1:length(CohortIncidenceModuleSettings$settings$irDesign$analysisList))
 
   targetIds <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$targets
   #updated for new CI
-  targetIds <- unlist(lapply(targetIds, function(id) CohortIncidenceModuleSettings$settings$irDesign$targetDefs[[id]]$id))
-  
+  targetIds <- unlist(lapply(1:length(targetIds), function(id) CohortIncidenceModuleSettings$settings$irDesign$targetDefs[[id]]$id))
   
   # this is now the ci cohort ids not the main cohort ids
   outcomeIdsCI <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$outcomes
