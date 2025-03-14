@@ -2,8 +2,22 @@
 % Please edit documentation in R/ProtocolGenerator.R
 \docType{package}
 \name{ProtocolGenerator}
+\alias{ProtocolGenerator-package}
 \alias{ProtocolGenerator}
 \title{ProtocolGenerator}
 \description{
 A package for creating protocols from json specification
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://ohdsi.github.io/ProtocolGenerator}
+  \item \url{https://github.com/OHDSI/ProtocolGenerator}
+  \item Report bugs at \url{https://github.com/OHDSI/ProtocolGenerator/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Jenna Reps \email{jreps@its.jnj.com}
+
 }

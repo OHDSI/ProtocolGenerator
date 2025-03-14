@@ -1,3 +1,16 @@
+#' getDemoLoc
+#'
+#' @description
+#' Get the file location of an example json in the package
+#'
+#' @details
+#' This function returns the path to an example json specification file.
+#' 
+#' @return
+#' A file path location to an example specification json
+#'
+#' @export
+#' 
 getDemoLoc <- function(){
   return(system.file(
     'demo', 
