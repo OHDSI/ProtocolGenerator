@@ -120,8 +120,7 @@ test_that("getSettingsTable and defaultColumns", {
   tblReact <- reportTableFormat(
     table = allSettings, 
     groupBy = NULL,
-    columns = tbl, 
-    caption
+    columns = tbl
   )
   
   testthat::expect_is(tblReact, "reactable")

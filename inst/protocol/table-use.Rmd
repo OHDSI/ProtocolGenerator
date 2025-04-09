@@ -1,0 +1,152 @@
+---
+output: html_document
+---
+  
+## Cohort Tracker
+
+```{r echo=FALSE, results='asis'}
+
+# parent name, parent id, cohort name, cohort id, ci_target, ci_outcome, char_target, char_outcome, cm_target, cm_comp, cm_outcome, sccs_target, sccs_outcome, plp_target, plp_outcome
+
+cohortTrackerAll <- merge(
+  cohortDefintionDf[, c('parentName','parentId','cohortName','cohortId')],
+  cohortTracker,
+  by = 'cohortId'
+)
+
+cohortTrackerAll <- tidyr::pivot_wider(
+  data = cohortTrackerAll, 
+  names_from = 'type',
+  values_from = 'value', 
+  values_fill = 0
+  )
+
+trackerCols = list(
+    parentName = reactable::colDef(
+      name = 'Parent Cohort', 
+      filterable = TRUE, 
+      html = TRUE, 
+      minWidth = 250
+        ),
+    parentId = reactable::colDef(
+      name = 'Parent Cohort Id'
+    ),
+    cohortName = reactable::colDef(
+      name = 'Cohort', 
+      filterable = T, 
+      html = TRUE, 
+      minWidth = 250
+        ),
+    cohortId = reactable::colDef(
+      name = 'Cohort Id'
+    ),
+    ciTarget = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+    ciOutcome = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+     cTarget = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+    cOutcome = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+  tteTarget = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+    tteOutcome = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+  dcrcTarget = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+    dcrcOutcome = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+     cmTarget = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+  cmComp = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+  cmOutcome = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+    sccsOutcome = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+  sccsTarget = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+  sccsIndication = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+  plpTarget = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  ")),
+  plpOutcome = reactable::colDef(cell = reactable::JS("
+    function(cellInfo) {
+      // Render as an X mark or check mark
+      return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
+    }
+  "))
+  )
+  
+reactable::reactable(
+  data = cohortTrackerAll %>% 
+    dplyr::arrange(.data$parentName, .data$cohortName), 
+  groupBy = 'parentName',
+  columns = trackerCols[names(trackerCols) %in% colnames(cohortTrackerAll)]
+  )
+
+```
+
+
+
+

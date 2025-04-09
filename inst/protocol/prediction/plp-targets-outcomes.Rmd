@@ -1,0 +1,84 @@
+---
+output: html_document
+---
+  
+##### Target Outcome Pairs
+
+```{r echo=FALSE, results='asis'}
+
+reportTableFormat(
+  table = tosSub %>%
+    dplyr::arrange(.data$parentNameTarget, .data$cohortNameTarget, .data$parentNameOutcome), 
+  groupBy = c('parentNameTarget','cohortNameTarget'),
+  columns = list(
+        subsetIdTarget = reactable::colDef(show = F),
+        isParentTarget = reactable::colDef(show = F),
+        parentIdTarget = reactable::colDef(show = F),
+        subsetNameTarget = reactable::colDef(show = F),
+        packageVersionTarget = reactable::colDef(show = F),
+        numberSubsetOperatorsTarget = reactable::colDef(show = F),
+
+        subsetIdOutcome = reactable::colDef(show = F),
+        isParentOutcome = reactable::colDef(show = F),
+        parentIdOutcome = reactable::colDef(show = F),
+        subsetNameOutcome = reactable::colDef(show = F),
+        packageVersionOutcome = reactable::colDef(show = F),
+        numberSubsetOperatorsOutcome = reactable::colDef(show = F),
+        
+        cohortNameTarget = reactable::colDef(
+       show = TRUE,
+       name = 'Target', 
+       filterable = TRUE, 
+       html = TRUE,
+       minWidth = 300
+    ),
+        cohortNameOutcome = reactable::colDef(
+          show = FALSE,
+          name = 'Outcome', 
+          filterable = TRUE, 
+          html = TRUE,
+          minWidth = 300, 
+          aggregate = 'count'
+        ),
+        cohortIdTarget = reactable::colDef(show = F),
+        cohortIdOutcome = reactable::colDef(show = F),
+    
+        subsetCohortsTarget = reactable::colDef(html = TRUE),
+        subsetCohortsOutcome = reactable::colDef(show = F),
+        appliedSubsetsTarget = reactable::colDef(html = TRUE),
+        appliedSubsetsOutcome = reactable::colDef(show = F),
+    
+    parentNameOutcome = reactable::colDef(
+      show = TRUE,
+      name = 'Outcome', 
+       filterable = TRUE, 
+       html = TRUE, 
+      minWidth = 300,
+      aggregate = 'count'
+      ),
+    designId = reactable::colDef(show = F),
+    
+      parentNameTarget = reactable::colDef(
+          name = 'Target Parent',
+          html = TRUE, 
+          filterable = T, 
+          minWidth = 300
+        ),
+     cohortNameWithLinkTarget = reactable::colDef(
+       show = FALSE,
+       name = 'Target', 
+       filterable = TRUE, 
+       html = TRUE
+    ),
+    cohortNameWithLinkOutcome = reactable::colDef(
+      show = FALSE,
+       name = 'Outcome', 
+       filterable = TRUE, 
+       html = TRUE
+    )
+    
+  ),
+  caption = 'A model is developed per target and outcome pair for this model design.'
+  ) 
+
+```

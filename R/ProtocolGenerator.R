@@ -18,7 +18,7 @@
 #' 
 #' @description A package for creating protocols from json specification
 #'
-#' @docType package
+#' _PACKAGE
 #' @name ProtocolGenerator
 #' @importFrom dplyr %>%
 #' @importFrom rlang .data

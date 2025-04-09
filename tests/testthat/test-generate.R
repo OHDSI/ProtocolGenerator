@@ -6,8 +6,10 @@ context("generate")
 test_that("generateProtocol", {
   
   test <- generateProtocol(
+    jsonLocation = getDemoLoc(),
     webAPI = 'https://api.ohdsi.org/WebAPI',
-    outputLocation = './protocol'
+    outputLocation = './protocol', 
+    downloadConcepts = FALSE
   )
   
   testthat::expect_true(dir.exists('./protocol'))

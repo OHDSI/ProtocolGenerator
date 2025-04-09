@@ -2,8 +2,10 @@
 output: html_document
 ---
   
-```{r, echo=FALSE, results = 'hide', include = FALSE}
+```{r sccs_settings, echo=FALSE, results = 'hide', include = FALSE}
+
 package <- "SelfControlledCaseSeries"
+
 
 eo <- do.call(
   what = rbind,
@@ -12,10 +14,11 @@ eo <- do.call(
   FUN = function(k){
     x <- SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList[[k]]
     data.frame(
-      setting = k,
+      setting = ifelse(is.null(x$jsonId), 1, x$jsonId), #k,
       outcomeId = rep(x$outcomeId, length(x$exposures)),
       exposureId = unlist(lapply(x$exposures, function(x){x$exposureId})),
       exposureIdRef = unlist(lapply(x$exposures, function(x){paste0(x$exposureIdRef)})),
+      nestingId = ifelse(is.null(x$nestingCohortId), -1, x$nestingCohortId),
       trueEffectSize = unlist(lapply(x$exposures, function(x){ifelse(is.null(x$trueEffectSize), '', x$trueEffectSize )}))
     )
       
@@ -23,100 +26,247 @@ eo <- do.call(
   )
   )
 
-```
+# Should we unique?
+eoUnique <- eo
+#eoUnique <- unique(eo)
 
-## Self Controlled Case Series 
+# add in the target and indication parents
+tempDf <- cohortDefintionDf
+colnames(tempDf) <- paste0(colnames(tempDf), 'Target')
+eoUnique <- merge(eoUnique, tempDf, by.x = 'exposureId', by.y = 'cohortIdTarget')
+tempDf <- cohortDefintionDf[, c('cohortId', 'parentName', 'cohortNameWithLink','cohortName')]
+colnames(tempDf) <- paste0(colnames(tempDf), 'Indication')
+eoUnique <- merge(eoUnique, tempDf, by.x = 'nestingId', by.y = 'cohortIdIndication',
+                  all.x = T)
 
-::: {.panel-tabset}
 
-### Overview
+# figure out unique negative controls vs shared
+neo <- eoUnique[eoUnique$trueEffectSize == 1 & eoUnique$exposureId != -1,]
+settings <- unique(neo$setting)
+negInCommon <- neo$outcomeId[neo$setting == settings[1]]
+for(ngi in 1:length(settings)){
+  negInCommon <- intersect(negInCommon, neo$outcomeId[neo$setting == settings[ngi]])
+}
+negNotInCommon <- neo[!neo$outcomeId %in% negInCommon,]
 
-In total there are `r length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)` different self controlled case series analysis designs (see @sec-sccs-analysis) to be performed across `r sum(eo$trueEffectSize == '' & eo$exposureId != -1)` exposure outcome pairs (see @sec-sccs-eo).  In total `r length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)*sum(eo$trueEffectSize == '' & eo$exposureId != -1)` effect estimates will be calculated via the self controlled case series design.
+# if all analyses shared the same negative controls
+if(nrow(negNotInCommon) == 0){
+  #eo$setting <- 0
+  eoUnique <- eoUnique %>% dplyr::select(-'setting')
+}
 
-### Exposure Outcomes {#sec-sccs-eo}
-```{r, echo=FALSE, results = 'asis'}
-
-eoOfInt <- eo[eo$trueEffectSize == '' & eo$exposureId != -1,]
-eoOfInt$outcomeName <- sapply(
-  X = eoOfInt$outcomeId, 
-  FUN = function(x){paste0(cohortNames[cohortIds == x]," (<a href='#sec-",which(x==cohortIds), "'> view cohort </a>)")}
-  )
-eoOfInt$exposureName <- sapply(
-  X = eoOfInt$exposureId, 
-  FUN = function(x){paste0(cohortNames[cohortIds == x]," (<a href='#sec-",which(x==cohortIds), "'> view cohort </a>)")}
-  )
-
-reportTableFormat(
-  table = eoOfInt %>% 
-    dplyr::select(-c("trueEffectSize", "setting", "outcomeId", "exposureId", "exposureIdRef")), #%>%
-  #dplyr::group_by(.data$outcomeName) %>% 
-  #dplyr::summarize(exposureNames = paste(unique(.data$exposureName), collapse=',')), 
-  groupBy = 'outcomeName',
-  columns = list(
-    outcomeName = reactable::colDef(
-          html = TRUE, 
-          filterable = T
-          ),
-     exposureName = reactable::colDef(
-          html = TRUE, 
-          filterable = T
-          )
-  ),
-  caption = 'Outcome exposure pairs of interest included in study'
-  )
-
-```
-
-### Negative Outcomes 
-```{r, echo=FALSE, results = 'hide', include = FALSE}
-
-neo <- eo[eo$trueEffectSize == 1 & eo$exposureId != -1,]
-
-negTab <- do.call(
+if(length(negInCommon)>0){
+negTabShared <- do.call(
   what = rbind,
   args = lapply(
-  X = neo$outcomeId, 
+  X = negInCommon, 
   FUN = function(x){negativeControls[negativeControls$cohortId == x,]}
   )
 )
 
-negTab$exposureName <- sapply(
-  X = neo$exposureId, 
-  FUN = function(x){paste0(cohortNames[cohortIds == x]," (<a href='#sec-",which(x==cohortIds), "'> view cohort </a>)")}
+negTabShared <- negTabShared %>% 
+  dplyr::mutate(outcomeName = paste(.data$cohortName, '(concept: ',.data$outcomeConceptId,')')) %>%
+  dplyr::select(-c("cohortId","cohortName","outcomeConceptId"))
+
+} #end if length(negInCommon)>0
+
+
+# add the setting
+if(length(negNotInCommon$outcomeId)>0){
+negTab <- do.call(
+  what = rbind,
+  args = lapply(
+  X = negNotInCommon, 
+  FUN = function(x){negativeControls[negativeControls$cohortId == x,]}
   )
+)
+negTab$cohortId <- unlist(negTab$cohortId)
+negTab <- merge(
+                x = negTab,  
+                y = negNotInCommon[,c('outcomeId', 'setting','exposureId')], 
+                by.x = 'cohortId',
+                by.y = 'outcomeId'
+  )
+
+tempDf <- cohortDefintionDf[, c('parentName','cohortName', 'cohortId')]
+colnames(tempDf) <- paste0(colnames(tempDf),'Target')
+negTab <- merge(negTab, tempDf, by.x = 'exposureId', by.y = 'cohortId')
+
 negTab <- negTab %>% 
   dplyr::mutate(outcomeName = paste(.data$cohortName, '(concept: ',.data$outcomeConceptId,')')) %>%
-  dplyr::select(-c("cohortId","cohortName","outcomeConceptId")) #%>%
-  #dplyr::group_by(
-  #  .data$outcomeName,.data$occurrenceType, .data$detectOnDescendants) %>% 
-  #dplyr::summarize(exposureNames = paste(unique(.data$exposureName), collapse=','))
+  dplyr::select(-c("cohortId","cohortName","outcomeConceptId"))
+
+} # end Negtab
+
+eoOfInt <- unique(eoUnique[eoUnique$trueEffectSize == '' & eoUnique$exposureId != -1,])
+tempDf <- cohortDefintionDf
+colnames(tempDf) <- paste0(colnames(tempDf), 'Outcome')
+eoOfInt <- merge(eoOfInt, tempDf, by.x = 'outcomeId', by.y = 'cohortIdOutcome') %>%
+  dplyr::arrange(.data$parentNameTarget, .data$cohortNameIndication, .data$cohortNameOutcome)
+
+
 
 ```
 
-```{r, echo=FALSE, results = 'asis'}
-cat(paste("A total of ", length(unique(neo$outcomeId)), " negative control outcomes were included in the analysis"), sep = '\n')
+## Self Controlled Case Series 
+
+### Overview
+
+The self controlled case series aims to determine whether there is an effect between a drug and outcome.  The self controlled case series compares exposure time with unexposed time to see whether the outcome is more likely to occur while exposed. 
+
+The design requires the user to specify the target population of interest, an optional indication to restrict to and the outcome of interest.  Similar to cohort method, diagnostics to implemented to identify potential bias and effect estimates are only unblinded if all diagnostics pass.
+
+In this specification there are ``r length(unique(eoOfInt$parentIdTarget))`` unique parent exposure cohorts (``r nrow(unique(eoOfInt[, c('exposureId', 'nestingId')]))`` unique exposure and indications combinations), see @sec-sccs-eo.  There is a total of ``r length(unique(eoOfInt$nestingId))`` unique indications.  A total of ``r length(unique(eoOfInt$parentIdOutcome))`` parent outcome cohorts (``r length(unique(eoOfInt$outcomeId))`` unique outcomes with subsets).
+
+In total there are ``r length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)`` different self controlled case series analysis designs (see @sec-sccs-analysis).
+
+
+### Exposure Indication Outcomes {#sec-sccs-eo}
+```{r sccs_exposure_outcomes, echo=FALSE, results = 'asis'}
 
 reportTableFormat(
-  table = negTab,
-  groupBy = c('outcomeName', 'exposureName'),
+  table = eoOfInt %>% 
+    dplyr::select(-c("trueEffectSize", "exposureIdRef")) %>%
+    dplyr::arrange(.data$parentNameTarget, .data$cohortNameWithLinkOutcome), 
+  groupBy = c('parentNameTarget', 'cohortNameIndication','cohortNameOutcome'), # or outcome?
+  columns = list(
+        outcomeId = reactable::colDef(show = F),
+        exposureId = reactable::colDef(show = F),
+        nestingId = reactable::colDef(show = F),
+        
+        subsetIdTarget = reactable::colDef(show = F),
+        isParentTarget = reactable::colDef(show = F),
+        parentIdTarget = reactable::colDef(show = F),
+        subsetNameTarget = reactable::colDef(show = F),
+        packageVersionTarget = reactable::colDef(show = F),
+        numberSubsetOperatorsTarget = reactable::colDef(show = F),
+
+        subsetIdOutcome = reactable::colDef(show = F),
+        isParentOutcome = reactable::colDef(show = F),
+        parentIdOutcome = reactable::colDef(show = F),
+        subsetNameOutcome = reactable::colDef(show = F),
+        packageVersionOutcome = reactable::colDef(show = F),
+        numberSubsetOperatorsOutcome = reactable::colDef(show = F),
+        
+        cohortNameTarget = reactable::colDef(
+          show = TRUE,
+          name = 'Exposure',
+          html = TRUE, 
+          filterable = T
+          ),
+        cohortNameOutcome = reactable::colDef(
+          name = 'Outcome',
+          html = TRUE,
+          filterable = T
+        ),
+        cohortNameIndication = reactable::colDef(
+          name = 'Indication',
+          html = TRUE,
+          filterable = T
+        ),
+    
+        parentNameOutcome = reactable::colDef(show = FALSE),
+        parentNameIndication = reactable::colDef(show = FALSE),
+        
+        subsetCohortsTarget = reactable::colDef(show = F),
+        subsetCohortsOutcome = reactable::colDef(show = F),
+        appliedSubsetsTarget = reactable::colDef(show = F),
+        appliedSubsetsOutcome = reactable::colDef(show = F),
+        
+        parentNameTarget = reactable::colDef(
+          name = 'Exposure Parent',
+          html = TRUE, 
+          filterable = TRUE
+        ),
+        
+        cohortNameWithLinkTarget = reactable::colDef(
+          show = FALSE,
+          name = 'Exposure',
+          html = TRUE, 
+          filterable = T
+          ),
+    cohortNameWithLinkOutcome = reactable::colDef(
+      show = FALSE,
+          name = 'Outcome',
+          html = TRUE,
+          filterable = T
+    ),
+    cohortNameWithLinkIndication = reactable::colDef(
+      show = FALSE,
+          name = 'Indication',
+          html = TRUE,
+          filterable = T
+    )
+  ),
+  caption = 'Outcome exposure pairs of interest included in study'
+  )
+cat('\n\n')
+
+```
+
+### Negative Outcomes 
+
+```{r negative_control_table, echo=FALSE, results = 'asis'}
+
+if(length(negInCommon)>0){
+cat('\n\n')
+cat(paste("A total of ", length(unique(negTabShared$outcomeName)), " negative control outcomes were shared across all the analyses\n\n"), sep = '\n\n')
+cat('\n\n')
+
+if(!"standardConcept" %in% colnames(negTabShared)){
+  negTabShared$standardConcept <- ''
+}
+
+print(shiny::tagList(reportTableFormat(
+  table = negTabShared %>%
+    dplyr::relocate("outcomeName", .before = "standardConcept"),
   columns = list(
     outcomeName = reactable::colDef(
+          name = 'Negative Control Outcome',
+          html = TRUE, 
+          filterable = T, 
+          minWidth = 200
+          )
+  ),
+  caption = 'Negative outcomes shared across the study'
+  )))
+
+cat('\n\n')
+
+} # end NegTabShared
+
+
+if(length(negNotInCommon$outcomeId)>0){
+  
+reportTableFormat(
+  table = negTab,
+  groupBy = 'setting',#c('outcomeName', 'exposureName'),
+  columns = list(
+        setting = reactable::colDef(
+          name = 'Negative Control Setting'
+        ),
+    outcomeName = reactable::colDef(
+          name = 'Outcome',
           html = TRUE, 
           filterable = T
           ),
     exposureName = reactable::colDef(
+          name = 'Exposure',
           html = TRUE, 
           filterable = T
           )
     
   ),
-  caption = 'Negative outcome included in study'
+  caption = 'Negative outcome included in study per setting'
   )
-cat('\n')
+cat('\n\n')
+
+} # end NegtabNotShared
+
 ```
 
 ### Analyses {#sec-sccs-analysis}
-```{r, echo=FALSE, results = 'asis'}
+```{r sccs_analyses, echo=FALSE, results = 'asis'}
 
 
 for(i in 1:length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)){
@@ -152,8 +302,14 @@ settingDf <- getSettingsTable(
     htmltools::tagList(
     reportTableFormat(
       table = settingDf,
-      groupBy = "input",
-    columns = defaultColumns(settingDf)
+      #groupBy = "input",
+    columns = append(defaultColumns(settingDf),
+                     list(
+                       desc = reactable::colDef(
+                         name = 'Description', 
+                         minWidth = 300
+                         )
+                     ))
     )
   )
   )
@@ -261,7 +417,13 @@ settingDf <- getSettingsTable(
       reportTableFormat(
       table = allData, 
       groupBy = 'input', 
-      columns = defaultColumns(allData)
+      columns = append(defaultColumns(allData),
+                       list(
+                       desc = reactable::colDef(
+                         name = 'Description', 
+                         minWidth = 300
+                         )
+                     ))
     )
     )
    )
@@ -271,4 +433,23 @@ settingDf <- getSettingsTable(
 
 ```
 
-:::
+
+```{r sccs_cohort_tracker, echo=FALSE, results = 'asis',include=FALSE}
+
+# code to get the targets and outcomes for c
+# and add to the cohortTracker
+
+cohortTracker <- rbind(
+  cohortTracker,
+  data.frame(
+  type = c(
+    rep('sccsTarget', length(unique(eoOfInt$exposureId))),
+    rep('sccsOutcome', length(unique(eoOfInt$outcomeId))),
+    rep('sccsIndication', length(unique(eoOfInt$nestingId))) # what if 0?
+    ),
+  cohortId = c(unique(eoOfInt$exposureId), unique(eoOfInt$outcomeId) ,unique(eoOfInt$nestingId)),
+  value = 1
+  )
+)
+
+```

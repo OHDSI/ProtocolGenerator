@@ -2,11 +2,7 @@
 output: html_document
 ---
   
-#### Participants
-
-```{r echo=FALSE, results='asis'}
-cat('The target population ', cohortNames[which(modelDesignSetting$targetId == cohortIds)],' see ', paste0('@sec-',which(modelDesignSetting$targetId == cohortIds)), ' for cohort details. \\n')
-```
+##### Participants (Inclusions)
 
 Additional inclusion criteria:
 ```{r, echo=FALSE, results='asis'}
@@ -18,13 +14,11 @@ if(modelDesignSetting$restrictPlpDataSettings$washoutPeriod > modelDesignSetting
 } else{
   washout <- modelDesignSetting$populationSettings$washoutPeriod
 }
-if(!is.null(cohortDefinitions[[which(modelDesignSetting$targetId == cohortIds)]]$cohortDefinition)){
-  if(washout > ParallelLogger::convertJsonToSettings(cohortDefinitions[[which(modelDesignSetting$targetId == cohortIds)]]$cohortDefinition)$PrimaryCriteria$ObservationWindow[1]){
-    cat('\n - Patients with less than ',
-        washout,' days observation prior to index',
-        ' are excluded \n')
-  }
-}
+
+cat('\n - Patients with less than ',
+    washout,' days observation prior to index',
+    ' are excluded \n')
+
 if(modelDesignSetting$populationSettings$removeSubjectsWithPriorOutcome){
   cat('\n - Patients with the outcome within ',
       modelDesignSetting$populationSettings$priorOutcomeLookback,' days prior to index',

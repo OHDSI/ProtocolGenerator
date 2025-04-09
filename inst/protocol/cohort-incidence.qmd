@@ -6,7 +6,138 @@ output: html_document
 
 ### Overview
 
-A total of ``r do.call(sum, lapply(CohortIncidenceModuleSettings$settings$irDesign$analysisList, function(x){length(x[[1]])*length(x[[2]])*length(x[[3]])}))`` incidence rates will be developed across ``r length(CohortIncidenceModuleSettings$settings$irDesign$analysisList)`` different analyses.
+Cohort Incidence calculates the incidence proportion (per 100 patients) and incidence rate (per 100 patient years) for a set of target cohorts, outcomes (with a specified washout) and time-at-risks.  Stratification of the target cohorts by age group, gender and index year is also possible.
+
+The incidence proportion shows how often a patient in the target population has the outcome observed during the time-at-risk divided by the number of patients in the target population multiplied by 100 (to get it per 100 patients).  The results contain the number of patients in the target population, the number of patients in the target population with the outcome observed during the time-at-risk and the incidence proportion.
+
+The incidence rate is calculated as the number of times the outcome is observed during a time-at-risk period for the target population divided by the number of days at risk for all patients in the target population divided by 365 (to get per year) and multiplied by 100 (to get per 100 years).  The results contain the total number of days at risk for all patients in the target population, the number of times an outcome occurs during a time at risk and the incidence rate.
+
+Cohort incidence can enable multiple time-at-risk periods per patient but the outcome washout is used to remove periods of time where it is impossible to observed an outcome.  For more details of cohort incidence see [here](https://ohdsi.github.io/CohortIncidence/articles/cohortincidence-method-documentation.html).
+
+```{r, echo=FALSE, results = 'asis',include=FALSE}
+
+# get number of incidence T/O/tars
+
+totarCounts <- do.call(sum, lapply(CohortIncidenceModuleSettings$settings$irDesign$analysisList, function(x){length(x[[1]])*length(x[[2]])*length(x[[3]])}))
+analysisCount <- length(CohortIncidenceModuleSettings$settings$irDesign$analysisList)
+
+targetCount <- length(CohortIncidenceModuleSettings$settings$irDesign$targetDefs)
+outcomeCount <- length(CohortIncidenceModuleSettings$settings$irDesign$outcomeDefs)
+tarCount <- length(CohortIncidenceModuleSettings$settings$irDesign$timeAtRiskDefs)
+
+allCounts <- lapply(
+  CohortIncidenceModuleSettings$settings$irDesign$analysisList, function(x){
+  targetIds <- x$targets
+  outcomeIds <- x$outcomes
+  tars <- x$tars
+    
+  #updated for new CI
+  targetIds <- unlist(lapply(1:length(targetIds), function(ind) CohortIncidenceModuleSettings$settings$irDesign$targetDefs[[ind]]$id))
+  outcomeIds <- unlist(lapply(1:length(outcomeIds), function(ind) CohortIncidenceModuleSettings$settings$irDesign$outcomeDefs[[ind]]$cohortId))
+  outcomeCleanWindow <- unlist(lapply(1:length(outcomeIds), function(ind) CohortIncidenceModuleSettings$settings$irDesign$outcomeDefs[[ind]]$cleanWindow))
+  parentIdsOutcome <-  unlist(lapply(1:length(outcomeIds), function(ind){ 
+    outcomeId <- CohortIncidenceModuleSettings$settings$irDesign$outcomeDefs[[ind]]$cohortId;
+    parentId <- cohortDefintionDf$parentId[cohortDefintionDf$cohortId %in% outcomeId]
+  }))
+                                  
+  counts <- list(
+    cohortTs = length(unique(targetIds)),
+    parentTs = length(unique(cohortDefintionDf$parentId[cohortDefintionDf$cohortId %in% targetIds])),
+    cohortOs = nrow(unique(cbind(outcomeIds, outcomeCleanWindow))),
+    parentOs = nrow(unique(cbind(parentIdsOutcome, outcomeCleanWindow))),
+    parentOsNoWindow = length(unique(parentIdsOutcome)),
+    tars = length(unique(tars)),
+    total = length(unique(targetIds))*nrow(unique(cbind(outcomeIds, outcomeCleanWindow)))*length(unique(tars))
+  )
+  return(counts)
+})
+
+totarCountsUnique <-sum(unlist(lapply(allCounts, function(x) x$total)))
+
+# create count sentances for each analysis
+countSentances <- lapply(1:length(allCounts), function(i) paste0('- Analysis ', i, ' @sec-incidence-analysis-',i,' : ', allCounts[[i]]$parentTs, ' unique parent targets (',allCounts[[i]]$cohortTs,' unique target subsets) see @sec-incidence-t-',i,', ', allCounts[[i]]$parentOs, ' unique parent outcomes with clean windows (',allCounts[[i]]$cohortOs,' unique outcome subsets with clean windows and ',allCounts[[i]]$parentOsNoWindow,' unique parent outcomes see @sec-incidence-o-',i,') and ',allCounts[[i]]$tars, ' time-at-risks see @sec-incidence-tar-',i,'. Total of ', allCounts[[i]]$total, ' T/O/TAR combinations in analysis ',i,'.'))
+
+# column settings for the target and outcome tables
+   ciColumns <- list(
+      subsetId = reactable::colDef(show = F),
+      isParent = reactable::colDef(show = F),
+      parentId = reactable::colDef(show = F),
+      subsetName = reactable::colDef(show = F),
+      packageVersion = reactable::colDef(show = F),
+      numberSubsetOperators = reactable::colDef(show = F),
+      cohortId  = reactable::colDef(show = F),
+      parentName = reactable::colDef(
+        name = 'Parent Cohort', 
+        defaultSortOrder = 'asc',
+        sortNALast = TRUE,
+        filterable = TRUE, 
+        minWidth = 300,
+        html = TRUE
+      ),
+      cohortName = reactable::colDef(
+        show = TRUE,
+        aggregate = "unique",
+        name = 'Cohort', 
+        defaultSortOrder = 'asc',
+        sortNALast = TRUE,
+        filterable = TRUE, 
+        minWidth = 300
+        ),
+      cohortNameWithLink = reactable::colDef(
+        show = FALSE,
+        name = 'Cohort', 
+        defaultSortOrder = 'asc',
+        sortNALast = TRUE,
+        filterable = TRUE, 
+        minWidth = 300,
+        html = TRUE
+      ),
+      subsetCohorts = reactable::colDef(
+        aggregate = "count",
+        html = TRUE
+      ),
+      appliedSubsets = reactable::colDef(
+        aggregate = "count",
+        html = TRUE
+      ),
+      cleanWindow =  reactable::colDef(
+        aggregate = "unique",
+        filterable = T,
+      filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('ci-out-tab', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }
+      )
+    )
+   
+# stratification sentance
+stratInd <- unlist(lapply(CohortIncidenceModuleSettings$settings$irDesign$strataSettings, function(x) is.logical(x)))
+
+if(sum(stratInd)>0){
+  stratSentance <- paste0('Stratified by ', paste0(gsub('by', '', names(stratInd)[stratInd]), collapse = '/'), ', see @sec-incidence-strat. There will be more results due to including stratification of the target cohorts.')
+} else{
+  stratSentance <- 'No stratification applied.'
+}
+
+```
+
+The incidence rate specification contains ``r analysisCount`` analysis settings consisting of combinations of target cohorts, outcomes and time at risk (TAR) settings.  The stratification settings are shared across analyses.
+
+```{r, echo=FALSE, results = 'asis'}
+cat(stratSentance, sep = '\n')
+cat('\n')
+cat('The analysis settings are:', sep = '\n')
+cat('\n')
+cat(unlist(countSentances), sep = '\n')
+cat('\n')
+```
 
 ```{r, echo=FALSE, results = 'asis'}
 
@@ -17,11 +148,15 @@ getTarString <- function(tarDefs, tarId){
     return(paste0('(',res$start$dateField ,' + ', res$start$offset, ') - (', res$end$dateField, ' + ', res$end$offset, ')'))
 }
 
+ciTargetIds <- c()
+ciOutcomeIds <- c()
 for(i in 1:length(CohortIncidenceModuleSettings$settings$irDesign$analysisList)){
 
   targetIds <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$targets
   #updated for new CI
   targetIds <- unlist(lapply(1:length(targetIds), function(id) CohortIncidenceModuleSettings$settings$irDesign$targetDefs[[id]]$id))
+  
+  ciTargetIds <- c(ciTargetIds, targetIds) # vector or all targets
   
   # this is now the ci cohort ids not the main cohort ids
   outcomeIdsCI <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$outcomes
@@ -31,47 +166,56 @@ for(i in 1:length(CohortIncidenceModuleSettings$settings$irDesign$analysisList))
       rbind, 
       CohortIncidenceModuleSettings$settings$irDesign$outcomeDefs)
     )
-  outcomeIds <- outcomeLookup$cohortId[outcomeLookup$id %in% outcomeIdsCI]
+  outcomeDf <- outcomeLookup[outcomeLookup$id %in% outcomeIdsCI,c('cohortId', 'cleanWindow')]
   
-  targets = sapply(
-    targetIds, 
-    function(x){
-      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
-    }
-  )
-  outcomes = sapply(
-    outcomeIds, 
-        function(x){
-      paste0(cohortNames[x==cohortIds], '(see @sec-',which(x==cohortIds), ')')
-    }
-    )
+  ciOutcomeIds <- c(ciOutcomeIds,outcomeLookup$cohortId) # vector of outcomes
   
+  # The nicely formatted settings
+  ciTargets <- cohortDefintionDf[cohortDefintionDf$cohortId %in% targetIds,]
+  ciOutcomes <- merge(cohortDefintionDf, outcomeDf, by = 'cohortId') %>%
+    dplyr::relocate("cleanWindow", .after = "parentName")
   tars <- CohortIncidenceModuleSettings$settings$irDesign$analysisList[[i]]$tars
   
   cat(
     paste0(
-      "\n### Analysis ", i, "{#sec-incidence-analysis-",
-      ifelse(i != length(CohortIncidenceModuleSettings$settings$irDesign$analysisList), i, 'end'),
-      "} \n")
+      "\n### Analysis ", i, "{#sec-incidence-analysis-",i,"} \n")
     )
+  
+   cat('\n\n')
 
-  cat("\n#### Targets ",
-      paste0(' - ',paste0(targets , collapse=' \n - ')), 
-      sep= '\n'
-  )
+  cat(paste0("\n#### Targets {#sec-incidence-t-",i,"}\n"))
+  if(nrow(ciTargets)>0){ 
+ print(shiny::tagList(
+   ProtocolGenerator::reportTableFormat(
+    table = ciTargets %>%
+      dplyr::arrange(.data$parentName,.data$cohortName), # always have parentName?
+    groupBy = "parentName", 
+    columns = ciColumns[names(ciColumns) %in% colnames(ciTargets)], 
+    caption = 'Target cohorts included in cohort incidence.'
+    )))
+   cat('\n\n')
+  }
   
-  cat("\n#### Outcomes \n",
-      paste0(' - ',paste0(outcomes , collapse=' \n - ')), 
-      sep= '\n'
-  )
+  cat(paste0("\n\n#### Outcomes {#sec-incidence-o-",i,"}\n"))
+   if(nrow(ciOutcomes)>0){ # TODO edit so it works when these columns are not in table
+print(shiny::tagList(ProtocolGenerator::reportTableFormat(
+    table = ciOutcomes %>%
+      dplyr::arrange(.data$parentName,.data$cohortName), 
+    groupBy = "parentName", 
+    columns = ciColumns[names(ciColumns) %in% colnames(ciOutcomes)],
+    caption = 'Outcome cohorts included in cohort incidence.', 
+    elementId = 'ci-out-tab'
+)))
+ cat('\n\n')
+}
   
-  cat("\n#### Time-at-risks (TARs) \n",
+  cat(paste0("\n\n#### Time-at-risks (TARs) {#sec-incidence-tar-",i,"}\n"),
       paste0(' - ',paste0(sapply(tars, function(x){getTarString(tarDefs, x)}) , collapse=' \n - ')), 
       sep= '\n'
   )
 }
   
-   cat("\n### Stratification \n", sep ='\n')
+   cat("\n### Stratification {#sec-incidence-strat}\n", sep ='\n')
    
    strataTable <- getSettingsTable(
   package = 'CohortIncidence', 
@@ -79,15 +223,34 @@ for(i in 1:length(CohortIncidenceModuleSettings$settings$irDesign$analysisList))
   #settings = CohortIncidenceModuleSettings$settings$irDesign$strataSettings
   settings = as.list(sapply(CohortIncidenceModuleSettings$settings$irDesign$strataSettings, function(x) paste(x, sep = ',', collapse = ','))) 
 )
-
-      reportTableFormat(
+ cat('\n\n')
+ 
+     print(shiny::tagList(reportTableFormat(
       table = strataTable, 
-      groupBy = 'input',
+      #groupBy = 'input',
       columns = defaultColumns(strataTable),
       caption = 'Stratification settings'
-      )
+      )))
 
-      
+      cat('\n\n')
   
 ```
 
+
+```{r ci_cohort_tracker, echo=FALSE, results = 'asis',include=FALSE}
+
+# code to get the targets and outcomes for ci
+# and add to the cohortTracker
+cohortTracker <- rbind(
+  cohortTracker,
+  data.frame(
+  type = c(
+    rep('ciTarget', length(unique(ciTargetIds))),
+    rep('ciOutcome', length(unique(ciOutcomeIds)))
+    ),
+  cohortId = c(unique(unlist(ciTargetIds)), unique(unlist(ciOutcomeIds))),
+  value = 1
+  )
+)
+
+```

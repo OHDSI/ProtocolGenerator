@@ -15,6 +15,23 @@
 # limitations under the License.
 
 
+#' display a reactable when there are multiple outputs to print
+#'
+#' @description
+#' display a reactable when there are multiple outputs to print
+#'
+#' @details
+#' Wraps the input around print and shiny:tagList
+#' 
+#' @param x The object, such as a reactable, to print 
+#' @return
+#' Nothing just prints the object in quarto
+#'
+#' @export
+#' 
+tagPrint <- function(x){
+  print(shiny::tagList(x))
+}
 
 #' getCohortDefinitionsFromJson
 #'
@@ -115,7 +132,8 @@ getCohortDefinitionsFromJson <- function(
 #' a data.frame with the concept ids details for the standard concepts and their
 #' sourced concepts.
 #' 
-#' @param conceptIds A list of concept ids to extract details about from ATLAS webapi
+#' @param expression A concept set expression to extract details about from ATLAS webapi
+#' @param conceptIds A vector of conceptsIds to extract details about from ATLAS webapi
 #' @param baseUrl The ATLAS baseUrl
 #' @return
 #' An named R list with the elements 'standard' and 'source'
@@ -123,22 +141,33 @@ getCohortDefinitionsFromJson <- function(
 #' @export
 #' 
 getConcepts <- function(
-    conceptIds, 
+    expression, 
+    conceptIds = NULL,
     baseUrl = 'https://api.ohdsi.org/WebAPI'
     ){
   
-  codes <- ROhdsiWebApi::getConcepts(
-    conceptIds = conceptIds, 
+  # if concepts are not specified, extract from the expression instead
+  if(is.null(conceptIds)){
+    allCodes <- ROhdsiWebApi::resolveConceptSet(
+      conceptSetDefinition = expression, 
+      baseUrl = baseUrl
+    )
+  } else{
+    allCodes <- conceptIds
+  }
+  
+  standard <- ROhdsiWebApi::getConcepts(
+    conceptIds = allCodes, 
     baseUrl = baseUrl
   )
   
   source <- ROhdsiWebApi::getSourceConcepts(
-    conceptIds = codes$conceptId, 
+    conceptIds = allCodes, 
     baseUrl = baseUrl
   )
   
   return(list(
-    standard = codes,
+    standard = standard,
     source = source
   ))
   
@@ -312,6 +341,18 @@ functionDefaults <- function(
     ){
   inputs <- formals(eval(parse(text = paste0(package,'::', functionName))))
   
+  # CohortMethod uses Cyclops function without referencing it
+  # so need to add this code to address that
+  if(package == "CohortMethod"){
+    if("Cyclops" %in% rownames(utils::installed.packages())){
+      createPrior <- Cyclops::createPrior
+      createControl <- Cyclops::createControl
+    } else{
+      createPrior <- function(x){'need to install Cyclops'}
+      createControl <- function(x){'need to install Cyclops'}
+    }
+  }
+  
   if(!is.null(inputs)){
     hasValue <- unlist(
       lapply(inputs, function(x){
@@ -351,8 +392,9 @@ listToDf <- function(
     level2 = unlist(lapply(strsplit(names, '\\.'), function(x) ifelse(is.na(x[2]), " ", x[2]))),
     value = values, 
     row.names = NULL
-  ) %>% 
-    dplyr::rename(!!valueName := "value") # import := ?
+  ) 
+  
+  colnames(df)[colnames(df) == "value"] <- valueName
   
   return(df)
 }
@@ -548,6 +590,7 @@ defaultColumns <- function(data){
 #' @param groupBy column to group by (optional)
 #' @param columns The column details (create default using defaultColumns())
 #' @param caption  A table caption
+#' @param elementId Element ID for the widget.
 #' @return
 #' Details about all inputs into the functionName within R package of interest
 #'
@@ -557,6 +600,7 @@ reportTableFormat <- function(
     table, 
     groupBy = NULL,
     columns = NULL, 
+    elementId = NULL,
     caption
 ){
   
@@ -570,7 +614,8 @@ reportTableFormat <- function(
     showPageSizeOptions = T,
     showSortIcon = T, 
     columns = columns, 
-    rownames = F
+    rownames = F,
+    elementId = elementId
   )
   
 }
@@ -615,10 +660,15 @@ formatCovariateSettings <- function(
         grep('Observation', names(tempSettings))
       )
       names(tempSettings)[unique(inds)] <- paste0('use',names(tempSettings)[unique(inds)])
-    }
-    if(attr(tempSettings,"fun") == "PatientLevelPrediction::getCohortCovariateData"){
+    } else if(attr(tempSettings,"fun") == "PatientLevelPrediction::getCohortCovariateData"){
       fun <- 'createCohortCovariateSettings'
       package <- 'PatientLevelPrediction'
+    } else if(attr(tempSettings,"fun") == "getDbCohortBasedCovariatesData"){
+      fun <- 'createCohortBasedCovariateSettings'
+      package <- 'FeatureExtraction'
+    } else{
+      fun <- attr(tempSettings,"fun")
+      package <- ''
     }
     
     covariateDetailsTemp <- getSettingsTable(

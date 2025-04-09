@@ -5,91 +5,365 @@ output: html_document
 ```{r, echo=FALSE, results = 'hide', include=FALSE}
 library(CohortMethod)
 package <- 'CohortMethod'
+
+  # if authorise
+  if(!is.null(params$authMethod)){
+  ROhdsiWebApi::authorizeWebApi(
+    baseUrl = params$webAPI, 
+    authMethod = params$authMethod, 
+    webApiUsername = params$webApiUsername, 
+    webApiPassword = params$webApiPassword
+      )
+  }
+
+# get tars
+tars <- unlist(lapply(cohortMethodModuleSettings$settings$cmAnalysisList, function(x) paste0('\n- (',x$createStudyPopArgs$startAnchor, '+' ,x$createStudyPopArgs$riskWindowStart, ') - (', x$createStudyPopArgs$endAnchor, '+' ,x$createStudyPopArgs$riskWindowEnd, ')')))
+
+
+# do the counts/processing
+tcoList <- cohortMethodModuleSettings$settings$targetComparatorOutcomesList
+cmOut <- lapply(tcoList, function(x){
+  temp <- do.call('rbind',lapply(x$outcomes, function(x2){
+    data.frame(
+      outcomeId = x2$outcomeId,
+      outcomeOfInterest = x2$outcomeOfInterest,
+      priorOutcomeLookback = ifelse(is.null(x2$priorOutcomeLookback),0, x2$priorOutcomeLookback)
+    )
+  }))
+  temp[temp$outcomeOfInterest,]
+}
+)
+cmOutUnique <- unique(cmOut)
+
+cmOutId <- unlist(lapply(cmOut, function(x){which(unlist(lapply(cmOutUnique,function(y) identical(x, y)))) }))
+
+for(cmi in 1:length(cmOutUnique)){
+  tempDf <- cohortDefintionDf
+  colnames(tempDf) <- paste0(colnames(cohortDefintionDf), 'Outcome')
+  cmOutUnique[[cmi]] <- merge(cmOutUnique[[cmi]], tempDf, by.x='outcomeId', by.y = 'cohortIdOutcome', all.x = T) %>% 
+    dplyr::relocate('cohortNameOutcome') %>%
+    dplyr::relocate('parentNameOutcome') %>%
+    dplyr::relocate('priorOutcomeLookback', .after = 'cohortNameOutcome') %>% 
+    dplyr::arrange(.data$parentNameOutcome, .data$cohortNameOutcome)
+}
+
+
+
+# add cmOutId to target settings
+# add outcome section per cmOutUnique
+
+tcCombos <- do.call(rbind,lapply(1:length(tcoList), function(x) 
+  data.frame(tcoId = x, 
+             targetId = tcoList[[x]]$targetId, 
+             comparatorId = tcoList[[x]]$comparatorId,
+             outcomeSet = paste0("<a href ='#sec-cm-out-",cmOutId[x], "'> Outcome Set ", cmOutId[x], " </a>" )
+  )
+  )
+  )
+
+analysisCm <- cohortMethodModuleSettings$settings$cmAnalysisList
+
+# create data.frame with T/C/O with all cohort details 
+tempDf <- cohortDefintionDf
+colnames(tempDf) <- paste0(colnames(cohortDefintionDf), 'Target')
+tcCombos<- merge(tcCombos, tempDf, by.x='targetId', by.y = 'cohortIdTarget', all.x = T)
+
+tempDf <- cohortDefintionDf
+colnames(tempDf) <- paste0(colnames(cohortDefintionDf), 'Comp')
+tcCombos <- merge(tcCombos, tempDf, by.x='comparatorId', by.y = 'cohortIdComp', all.x = T)
+
+tcCombos$sameSubset <- tcCombos$subsetIdComp == tcCombos$subsetIdTarget
+
+targetParentsCount <- length(unique(tcCombos[, c('parentIdTarget')]))
+targetCohortCount <- length(unique(tcCombos[, c('targetId')]))
+
+compIds <- tcCombos %>%
+  dplyr::group_by(.data$targetId) %>%
+  dplyr::summarise(
+    compCount = length(unique(.data$comparatorId))
+  )
+
+
+outcomeRange <- unlist(lapply(cmOutUnique, function(x) nrow(x)))
+if(length(outcomeRange) != 1){
+  outcomeRange <- paste0(' between ', min(outcomeRange), ' and ', max(outcomeRange))
+} else{
+  outcomeRange <- paste0(min(outcomeRange))
+}
+
 ```
 
 ## Cohort Method 
 
-::: {.panel-tabset}
-
 ### Overview
 
-In this study a total of `r nrow(unique(do.call(rbind,lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList, function(x) merge(data.frame(targetId = x$targetId, comparatorId = x$comparatorId), data.frame( outcomeId = unlist(lapply(x$outcomes, function(outcome){outcome$outcomeId[outcome$outcomeOfInterest]})) ) )))))*length(cohortMethodModuleSettings$settings$cmAnalysisList)` effect estimates will be investigated per database using the Cohort Method approach. Specifically, the study consists of a total of `r nrow(unique(do.call(rbind,lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList, function(x) merge(data.frame(targetId = x$targetId, comparatorId = x$comparatorId), data.frame( outcomeId = unlist(lapply(x$outcomes, function(outcome){outcome$outcomeId[outcome$outcomeOfInterest]})) ) )))))` target comparator outcome combinations (see @sec-cm-tco) to be evaluated across `r length(cohortMethodModuleSettings$settings$cmAnalysisList)` different analyses settings (see @sec-cm-analyses).
+Cohort method calculates comparative effect estimates.  It requires specifying a target cohort (treatment 1), comparator cohort (treatment 2) and the outcome of interest.  The standard process requires creating a propensity model to predict treatment and that is used to mimic randomization via matching, trimming or inverse probability weighting.  The method used to estimate the effect is specified via analysis settings. In addition, the user can specify negative controls to use for effect estimate calibration.
 
-### Target Comparator Outcomes {#sec-cm-tco}
+Using observational data for causal inference can be problematic due to various forms of potential bias.  To minimise bias effects, cohort method performs different diagostics that evaluate whether there is bias present and effect estimates are only unblinded if all diagnostics are passed.  For more details see [here](https://academic.oup.com/jamia/article/32/3/518/7950905).
+
+```{r, echo=FALSE, results = 'asis'}
+cat(paste0('In this specification there are ', targetParentsCount, ' unique parent target cohorts (corresponding to ', targetCohortCount, ' unique targets with subsets), see @sec-cm-tc.  There were between ', min(compIds$compCount),' and ', max(compIds$compCount), ' comparators per target cohort and ', outcomeRange, ' outcome/prior outcome lookbacks (see @sec-cm-out) per target cohort and comparator cohort pair. There are ', length(analysisCm), ' analyses settings specified, see @sec-cm-analyses. The ', length(tars), ' analyses time at risk settings are: '), tars, sep = '\n')
+```
+
+### Combinations
 ```{r, echo=FALSE, results = 'asis'}
 
-for( i in 1:length(cohortMethodModuleSettings$settings$targetComparatorOutcomesList)){
-cat(paste0('\n#### Setting ', i, ' \n'), sep= '\n')
-  
-  cat(
-    paste0('\n##### Target Comparator Outcomes'), 
+# get all the exclude covariates
+excludeConcepts <- list()
+
+# get all the negative controls
+negative <- list()
+
+for(i in 1:length(cohortMethodModuleSettings$settings$targetComparatorOutcomesList)){
+
+# get the excluded concepts
+excludeConcepts[[i]] <- cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$excludedCovariateConceptIds
+
+outcomeCm <- data.frame(
+  outcomeId = unlist(lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) x$outcomeId)),
+outcomeOfInterest = unlist(lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) x$outcomeOfInterest)),
+priorOutcomeLookback = unlist(lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) ifelse(is.null(x$priorOutcomeLookback), 0,  x$priorOutcomeLookback)))
+)
     
-    "\n A relative effect for the risk of the outcome will be calculated for the target drug compared to the comparator drug for each target, comparator and outcome triplet in the table below.",
-           
+  #outcomes <- outcomeCm[outcomeCm$outcomeOfInterest,c('outcomeId','priorOutcomeLookback')]
+  negative[[i]] <- outcomeCm[!outcomeCm$outcomeOfInterest,c('outcomeId','priorOutcomeLookback')]
+}
+
+# now process the negative list and excludeConcepts list
+commonExclude <- excludeConcepts[[1]]
+if(length(excludeConcepts) > 1){
+for(ind in 2:length(excludeConcepts)){
+  commonExclude <- intersect(excludeConcepts[[ind]],commonExclude) 
+}
+}
+nonCommonExclude <- lapply(excludeConcepts, function(x) setdiff(x, commonExclude))
+nonCommonSets <- unique(nonCommonExclude)
+nonZero <- unlist(lapply(nonCommonExclude, function(x) length(x)>0))
+if(sum(nonZero) > 0){ 
+excludeSetId <- unlist(lapply(nonCommonExclude, function(x) which(unlist(lapply(1:length(nonCommonSets), function(ind) identical(x, nonCommonSets[[ind]]))))))
+} else{
+excludeSetId <- rep(NA, length(excludeConcepts))
+}
+
+commonNegativeId <- negative[[1]]$outcomeId
+if(length(negative) > 1){
+for(ind in 2:length(negative)){
+  commonNegativeId <- intersect(commonNegativeId, negative[[ind]]$outcomeId)
+} 
+}
+nonCommonNegative <- lapply(negative, function(x) setdiff(x$outcomeId, commonNegativeId))
+nonCommonNegSets <- unique(nonCommonNegative)
+nonZero <- unlist(lapply(nonCommonNegSets, function(x) length(x)>0))
+if(sum(nonZero) > 0){ # finished here friday
+negSetId <- unlist(lapply(nonCommonNegative, function(x) which(unlist(lapply(1:length(nonCommonNegSets), function(ind) identical(x, nonCommonNegSets[[ind]]))))))
+} else{
+negSetId <- rep(0, length(negative))
+}
+
+# sets: nonCommonSets -- nonCommonNegSets
+# add additional negative control and exclude set ids to tco
+
+# add to tcCombos
+tcCombos <- merge(
+  tcCombos,  
+  data.frame(
+    tcoId = 1:length(excludeSetId),
+    additionalExclusions = paste0("<a href ='#sec-cm-exclude-",excludeSetId,"'> View </a>")
+  ),
+  by = 'tcoId'
+  )
+
+tcCombos <- merge(
+  tcCombos,  
+  data.frame(
+    tcoId = 1:length(negSetId),
+    additionalNegativeControlId = paste0("<a href ='#sec-cm-negset-",negSetId,"'> View </a>")
+  ),
+  by = 'tcoId'
+  )
+
+tcCombos <- tcCombos %>% 
+    dplyr::relocate('cohortNameTarget') %>%
+    dplyr::relocate('cohortNameComp') %>%
+    dplyr::relocate('parentNameTarget') %>%
+    dplyr::relocate('sameSubset', .after = 'cohortNameTarget') %>%
+    dplyr::relocate('subsetCohortsTarget', .after = 'sameSubset') %>%
+    dplyr::relocate('appliedSubsetsTarget', .after = 'subsetCohortsTarget') %>%
+    dplyr::relocate('additionalExclusions', .after = 'appliedSubsetsTarget') %>%
+    dplyr::relocate('additionalNegativeControlId', .after = 'additionalExclusions') %>%
+    dplyr::relocate('outcomeSet', .after = 'cohortNameTarget') %>% 
+    dplyr::arrange(.data$parentNameTarget, .data$cohortNameComp, .data$cohortNameTarget)
+
+# gets just have one setting with all tcos - as works with bigger studies
+cat(paste0('\n#### Target and Comparators {#sec-cm-tc}\n'), 
+    
+    "\n A relative effect for the risk of the outcome will be calculated for the target drug compared to the comparator drug for each target and comparator pair in the table below.",
            
            sep= '\n'
     )
-  
-    outcomeIds <- unlist(lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) x$outcomeId))
-    
-    priorOutcomeLookbacks <- do.call('rbind', lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) c(x$outcomeId, x$priorOutcomeLookback)))
-      
-    colnames(priorOutcomeLookbacks) <- c('outcomeId','priorOutcomeLookback')
-  priorOutcomeLookbacks <- as.data.frame(priorOutcomeLookbacks)
-  
-  outcomeOfInterest <- unlist(lapply(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$outcomes, function(x) x$outcomeOfInterest))
-  
-  outcomes <- outcomeIds[outcomeOfInterest]
-  negative <- priorOutcomeLookbacks[!outcomeOfInterest,]
-  rownames(negative) <- NULL
-  
-  priorOutcomeLookback <- do.call(rbind,lapply(outcomes, function(x){priorOutcomeLookbacks[priorOutcomeLookbacks$outcomeId == x,]}))
-    
-  tco <- data.frame(
-    
-    Target = rep(paste0(cohortNames[cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$targetId==cohortIds],' <a href="#sec-',which(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$targetId==cohortIds),'" target="_blank">(View)</a>'),length(outcomes)),
+  print(
+    htmltools::tagList(
+    reportTableFormat(
+      table = tcCombos %>% dplyr::arrange(.data$parentNameTarget, .data$cohortNameComp),
+      groupBy = c("parentNameTarget","cohortNameComp"), 
+      columns = list(
+        parentNameTarget = reactable::colDef(
+          name = 'Target Parent',
+          html = TRUE, 
+          filterable = TRUE, 
+          minWidth = 300
+        ),
+        cohortNameComp = reactable::colDef(
+          aggregate = "count",
+          show = TRUE,
+          name = 'Comparator',
+          filterable = TRUE, 
+          minWidth = 300
+          ),
+        cohortNameTarget = reactable::colDef(
+          show = TRUE,
+          name = 'Target',
+          filterable = T, 
+          minWidth = 300
+        ),
+    additionalExclusions = reactable::colDef(
+          html = TRUE,
+          filterable = TRUE
+    ),
+    additionalNegativeControlId = reactable::colDef(
+          html = TRUE,
+          filterable = TRUE
+    ),
+    sameSubset = reactable::colDef(
+      filterable = TRUE,
+      filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cm-tc-tab', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }
+    ),
+        outcomeSet = reactable::colDef(
+          show = TRUE, 
+          html = TRUE
+          ),
+    subsetCohortsTarget = reactable::colDef(
+       show = TRUE, 
+       html = TRUE
+       ),
+     appliedSubsetsTarget = reactable::colDef(
+       show = TRUE, 
+       html = TRUE
+       ),
+        cohortNameWithLinkTarget = reactable::colDef(
+          show = FALSE,
+          name = 'Target',
+          html = TRUE, 
+          filterable = TRUE
+          ),
+    cohortNameWithLinkComp = reactable::colDef(
+      show = FALSE,
+      name = 'Comparator',
+          html = TRUE,
+          filterable = TRUE
+    ),
+        tcoId = reactable::colDef(show = FALSE),
+        comparatorId = reactable::colDef(show = FALSE),
+        targetId = reactable::colDef(show = FALSE),
+        subsetIdTarget = reactable::colDef(show = FALSE),
+        isParentTarget = reactable::colDef(show = FALSE),
+        parentIdTarget = reactable::colDef(show = FALSE),
+        subsetNameTarget = reactable::colDef(show = FALSE),
+        packageVersionTarget = reactable::colDef(show = FALSE),
+        numberSubsetOperatorsTarget = reactable::colDef(show = FALSE),
+        subsetIdComp = reactable::colDef(show = FALSE),
+        isParentComp = reactable::colDef(show = FALSE),
+        parentIdComp = reactable::colDef(show = FALSE),
+        subsetNameComp = reactable::colDef(show = FALSE),
+        packageVersionComp = reactable::colDef(show = FALSE),
+        numberSubsetOperatorsComp = reactable::colDef(show = FALSE),
+        cohortNameTarget = reactable::colDef(show = FALSE),
+        parentNameComp = reactable::colDef(show = FALSE),
+        subsetCohortsComp = reactable::colDef(show = FALSE),
+        appliedSubsetsComp = reactable::colDef(show = FALSE)
 
-    Comparison = rep(paste0(cohortNames[cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$comparatorId==cohortIds], ' <a href="#sec-',which(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$comparatorId==cohortIds), '" target="_blank">(View)</a>'), length(outcomes)),
-    
-    Outcome = paste0(cohortNames[cohortIds %in% outcomes], ' <a href="#sec-',
-                      which(cohortIds %in% outcomes), '" target="_blank">(View)</a>'),
-    
-    priorOutcomeLookback = priorOutcomeLookback$priorOutcomeLookback
+      ),
+    elementId = "cm-tc-tab"
+    )
+    )
   )
+  
+cat('\n#### Outcomes {#sec-cm-out}\n\n')
+# add outcomes
+for(cmi in 1:length(cmOutUnique)){
+  cat(paste0('\n##### Outcome set ',cmi,' {#sec-cm-out-',cmi,'}\n\n'))
   
   print(
     htmltools::tagList(
     reportTableFormat(
-      table = tco, 
-      groupBy = NULL, #c('Target', 'Comparison'), 
+      table = cmOutUnique[[cmi]],
+      groupBy = c("parentNameOutcome"), 
       columns = list(
-        Target = reactable::colDef(
+        priorOutcomeLookback = reactable::colDef(
+          aggregate = "unique",
+          show = TRUE,
+          name = 'Prior Outcome Lookback (days)',
+          filterable = TRUE
+        ),
+        outcomeId = reactable::colDef(show = FALSE),
+        outcomeOfInterest = reactable::colDef(show = FALSE),
+        subsetIdOutcome = reactable::colDef(show = FALSE),
+        parentNameOutcome = reactable::colDef(
+          show = TRUE,
+          name = 'Outcome Parent',
+          filterable = TRUE,
           html = TRUE, 
-          filterable = T
+          minWidth = 300
+        ),
+        cohortNameOutcome = reactable::colDef(
+          show = TRUE,
+          name = 'Outcome',
+          html = TRUE,
+          filterable = TRUE, 
+          minWidth = 300
           ),
-    Comparison = reactable::colDef(
+        cohortNameWithLinkOutcome = reactable::colDef(
+          show = FALSE,
+          name = 'Outcome',
           html = TRUE,
-          filterable = T
-    ),
-    Outcome = reactable::colDef(
-          html = TRUE,
-          filterable = T
-    )
- 
-      )
-      #caption = paste('Target Comparator Outcomes for setting ',i)
+          filterable = TRUE
+        ),
+        isParentOutcome = reactable::colDef(show = F),
+        parentIdOutcome = reactable::colDef(show = F),
+        subsetNameOutcome = reactable::colDef(show = F),
+        packageVersionOutcome = reactable::colDef(show = F),
+        numberSubsetOperatorsOutcome = reactable::colDef(show = F),
+        subsetCohortsOutcome = reactable::colDef(show = F),
+        appliedSubsetsOutcome = reactable::colDef(show = F)
+      ),
+    elementId = paste0("cm-out-tab-",cmi)
     )
     )
   )
   
-  if(length(cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$excludedCovariateConceptIds) > 0){
-  cat('\n##### Excluded Covariate Concept Ids \n') #{.tabset .tabset-pills}
-    concepts <- getConcepts(
-    conceptIds = cohortMethodModuleSettings$settings$targetComparatorOutcomesList[[i]]$excludedCovariateConceptIds, 
-    baseUrl = params$webAPI
-    )
-  
- cat('\n###### Standard \n')
+}
+
+cat('\n#### Excluded Covariates \n')  
+cat('\n##### Shared Excluded Covariate Concept Ids {#sec-cm-exclude-0}\n') #{.tabset .tabset-pills}
+
+concepts <- ProtocolGenerator::getConcepts(
+  conceptIds = commonExclude, 
+  baseUrl = params$webAPI
+    ) 
+
+if(length(concepts$standard) > 0){
+  cat('\n\n::: {.panel-tabset}\n\n')
+cat('\n###### Standard \n')
  print(
    htmltools::tagList(
     reportTableFormat(
@@ -118,20 +392,102 @@ cat(paste0('\n#### Setting ', i, ' \n'), sep= '\n')
     )
    )
   )
-  }
+  cat('\n\n:::\n\n')
+} # length standard
+
+# add the commonExclude  commonNegativeId 
+
+  for(ncsInd in 1:length(nonCommonSets)){
   
-  cat('\n##### Negative Controls \n')
+    cat(paste0('\n##### Excluded Covariate Concept Ids Set ',ncsInd,' {#sec-cm-exclude-',ncsInd,'} \n')) #{.tabset .tabset-pills}
+
+concepts <- ProtocolGenerator::getConcepts(
+  conceptIds = nonCommonSets[[ncsInd]], 
+  baseUrl = params$webAPI
+    ) 
   
-  cat(paste0('A total of ',nrow(negative),' negative controls were included. \n'))
+if(length(concepts$standard) > 0){
+ cat('\n\n::: {.panel-tabset}\n\n')
+ cat('\n##### Standard \n')
+ print(
+   htmltools::tagList(
+    reportTableFormat(
+      table = concepts$standard %>% 
+        dplyr::select("conceptId","conceptName", "domainId", "vocabularyId","conceptClassId"),
+      columns = list(
+        conceptName = reactable::colDef(filterable = T),
+        domainId = reactable::colDef(filterable = T),
+        vocabularyId = reactable::colDef(filterable = T)
+      )
+    )
+   )
+ )
+
+ cat('\n##### Source \n')
+  print(
+   htmltools::tagList(
+ reportTableFormat(
+      table = concepts$source %>% 
+        dplyr::select("conceptId","conceptName", "domainId", "vocabularyId", "conceptClassId"),
+      columns = list(
+        conceptName = reactable::colDef(filterable = T),
+        domainId = reactable::colDef(filterable = T),
+        vocabularyId = reactable::colDef(filterable = T)
+      )
+    )
+   )
+  )
+  cat('\n\n:::\n\n')
+} # length standard
+} # for loop
+
+  cat('\n#### Shared Negative Controls {#sec-cm-negset-0}\n')
+  
+  cat(paste0('A total of ',nrow(unique(commonNegativeId)),' negative controls were included accross analyses. \n'))
   
   print(
     htmltools::tagList(
     reportTableFormat(
       table = merge(
-        negative, 
+        data.frame(
+          cohortId = commonNegativeId
+        ), 
         negativeControls, 
-        by.y = 'cohortId', 
-        by.x='outcomeId', 
+        by = 'cohortId', 
+        all.x = T
+        ) %>% dplyr::arrange(.data$cohortName), 
+      groupBy = NULL, 
+      columns = list(
+        cohortName = reactable::colDef(
+          name = 'Negative Control', 
+          filterable = TRUE
+        ),
+        cohortId = reactable::colDef(show = FALSE),
+        outcomeConceptId = reactable::colDef(
+          name = 'ConceptId'
+        )
+      )
+      #caption = paste('Negative controls for setting ',i)
+    )
+  )
+  )
+  
+  # TODO add similar check for excluded covs?
+  if(length(nonCommonNegSets) != 1 & length(nonCommonNegSets[[1]]) != 0){
+    # add Negative controls that are different 
+     for(ncsInd in 1:length(nonCommonNegSets)){
+  
+    cat(paste0('\n#### Negative Controls Set ',ncsInd,' {#sec-cm-negset-',ncsInd,'} \n')) #{.tabset .tabset-pills}
+    
+    print(
+    htmltools::tagList(
+    reportTableFormat(
+      table = merge(
+        data.frame(
+          cohortId = nonCommonNegSets[[ncsInd]]
+        ), 
+        negativeControls, 
+        by = 'cohortId', 
         all.x = T
         ), 
       groupBy = NULL, 
@@ -140,8 +496,10 @@ cat(paste0('\n#### Setting ', i, ' \n'), sep= '\n')
     )
   )
   )
-    
-}
+  
+     }
+  }
+  
 
 ```
 
@@ -190,7 +548,13 @@ for(i in 1:length(cohortMethodModuleSettings$settings$cmAnalysisList)){
         covariateDetails
         ),
       groupBy = 'input', 
-      columns = defaultColumns(covariateDetails)
+      columns = append(defaultColumns(covariateDetails),
+                       list(
+                       desc = reactable::colDef(
+                         name = 'Description', 
+                         minWidth = 300
+                         )
+                     ))
     )
     )
   )
@@ -224,8 +588,14 @@ settingDf <- getSettingsTable(
     shiny::tagList(
     reportTableFormat(
       table = settingDf,
-      groupBy = "input",
-    columns = defaultColumns(settingDf)
+      #groupBy = "input",
+    columns = append(defaultColumns(settingDf),
+                     list(
+                       desc = reactable::colDef(
+                         name = 'Description', 
+                         minWidth = 300
+                         )
+                     ))
     )
   )
   )
@@ -262,8 +632,15 @@ settingDf <- getSettingsTable(
     shiny::tagList(
     reportTableFormat(
       table = settingDf,
-      groupBy = "input",
-    columns = defaultColumns(settingDf)
+      #groupBy = "input",
+    columns = append(defaultColumns(settingDf),
+                     list(
+                       desc = reactable::colDef(
+                         name = 'Description', 
+                         minWidth = 300
+                         )
+                     )
+    )
     )
   )
   )
@@ -321,5 +698,26 @@ getHelpText(
   
 
 ```
-:::
 
+
+```{r cm_cohort_tracker, echo=FALSE, results = 'asis',include=FALSE}
+
+# code to get the targets and outcomes for c
+# and add to the cohortTracker
+
+cmOuts <- unique(unlist(lapply(cmOutUnique, function(x) x$outcomeId)))
+
+cohortTracker <- rbind(
+  cohortTracker,
+  data.frame(
+  type = c(
+    rep('cmTarget', length(unique(tcCombos$targetId))),
+    rep('cmOutcome', length(cmOuts)),
+    rep('cmComp', length(unique(tcCombos$comparatorId)))
+    ),
+  cohortId = c(unique(tcCombos$targetId), cmOuts, unique(tcCombos$comparatorId)),
+  value = 1
+  )
+)
+
+```

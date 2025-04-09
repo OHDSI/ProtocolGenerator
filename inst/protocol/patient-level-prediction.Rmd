@@ -4,50 +4,114 @@ output: html_document
   
 ## PatientLevelPrediction
 
-::: {.panel-tabset}
+This analysis develops binary classifiers for a given patient population that predict the risk of a patient developing some outcome during some time at risk relative to prediction index.  These models are useful if you want to implement some intervention and would like to identify a 'high risk' group of patients who may benefit most from the intervention.  
 
 ### Overview
+```{r, echo=FALSE, result = 'asis'}
 
-A total of ``r length(PatientLevelPredictionModuleSettings$settings$modelDesignList)`` patient level prediction models will be developed. 
+tos <- data.frame(
+targetId =  unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$targetId)),
+outcomeId = unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$outcomeId))
+)
+
+# add names, parents, subset info for t and o
+tempDf <- cohortDefintionDf
+colnames(tempDf) <- paste0(colnames(tempDf),'Target')
+tos <- merge(tempDf, tos, by.x = 'cohortIdTarget', by.y = 'targetId')
+tempDf <- cohortDefintionDf
+colnames(tempDf) <- paste0(colnames(tempDf),'Outcome')
+tos <- merge(tempDf, tos, by.x = 'cohortIdOutcome', by.y = 'outcomeId')
+
+
+# remove T and O from model designs and get unique
+# may need to also remove seed from split?
+modelDesign <- PatientLevelPredictionModuleSettings$settings$modelDesignList
+for(i in 1:length(modelDesign)){
+  modelDesign[[i]]$targetId <- NULL
+  modelDesign[[i]]$outcomeId <- NULL
+}
+modelDesignUnique <- unique(modelDesign)
+
+tos$designId <- rep(0, length(modelDesign))
+for(j in 1:length(modelDesignUnique)){
+tos$designId[which(unlist(lapply(modelDesign, function(x) identical(modelDesignUnique[[j]], x))))] <- j
+}
+
+# covariate set - get attr(,"fun")
+covSet <- c()
+for(cind in 1:length(modelDesignUnique)){
+if(class(modelDesignUnique[[cind]]$covariateSettings) == 'covariateSettings'){
+  modelDesignUnique[[cind]]$covariateSettings <- list(modelDesignUnique[[cind]]$covariateSettings)
+}
+  
+  covSet <- c(covSet,paste0(unlist(lapply(modelDesignUnique[[cind]]$covariateSettings, function(x){
+    func <- attr(x, "fun")
+    settings <- x[sapply(x, function(x) is.logical(x))]
+    if(length(settings)>0){
+    settings <- names(settings)[unlist(settings)]
+    func <- paste0(c(func, paste0(settings, collapse = ',')), collapse = ': ')
+    }
+    return(func)
+  })), collapse = ' - '))
+  
+}
+
+# TODO remove this or revise? - add covariate summary name?
+predictionSummary <- data.frame(
+  model_design = paste0("<a href='#sec-model-design-",1:length(modelDesignUnique),"'> View </a>"),
+  number_targets = unlist(lapply(1:length(modelDesignUnique), function(x){length(unique(tos$parentIdTarget[tos$designId == x]))})),
+  number_targets_with_subsets = unlist(lapply(1:length(modelDesignUnique), function(x){length(unique(tos$cohortIdTarget[tos$designId == x]))})),
+number_outcomes = unlist(lapply(1:length(modelDesignUnique), function(x){length(unique(tos$parentIdOutcome[tos$designId == x]))})),
+number_outcomes_with_subsets = unlist(lapply(1:length(modelDesignUnique), function(x){length(unique(tos$cohortIdOutcome[tos$designId == x]))})),
+  timeAtRisk = paste0(
+    unlist(lapply(modelDesignUnique , function(x) x$populationSettings$startAnchor)), 
+    ' + ',
+    unlist(lapply(modelDesignUnique, function(x) x$populationSettings$riskWindowStart)),
+    ' - ',
+    unlist(lapply(modelDesignUnique, function(x) x$populationSettings$endAnchor)), 
+    ' + ',
+    unlist(lapply(modelDesignUnique, function(x) x$populationSettings$riskWindowEnd))
+    ),
+covariates = covSet
+)
+```
+
+There is a total of ``r length(modelDesignUnique)`` patient level prediction model designs specified, see @sec-model-designs.  The table below contains links to the model designs that show the table of target and outcome pairs and the model specification.  The table also summarizes the time-at-risk for each model design and the covariate settings.
+
 
 ```{r, echo=FALSE, result = 'asis'}
 
-targetIds <- unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$targetId))
-outcomeIds <- unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$outcomeId))
-
-predictionSummary <- data.frame(
-  model_design = 1:length(PatientLevelPredictionModuleSettings$setting$modelDesignList),
-  target = sapply(targetIds, function(x) cohortNames[x==cohortIds]),
-  outcome = sapply(outcomeIds, function(x) cohortNames[x==cohortIds]),
-  timeAtRisk = paste0(
-    unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$populationSettings$startAnchor)), 
-    ' + ',
-    unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$populationSettings$riskWindowStart)),
-    ' - ',
-    unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$populationSettings$endAnchor)), 
-    ' + ',
-    unlist(lapply(PatientLevelPredictionModuleSettings$settings$modelDesignList, function(x) x$populationSettings$riskWindowEnd))
-    )#,
-  #view = paste0('#sec-model-design-',1:length(PatientLevelPredictionModuleSettings$setting))
-  
-) #%>%
-  #dplyr::mutate(
-   # analysis = htmltools::tags$a(href = view, target = "_blank", view)
-    #analysis = kableExtra::cell_spec(row.names(.), "html", link = view)
-    #) #%>%
-  #dplyr::select(-"view")
-
 reportTableFormat(
   table = predictionSummary, 
-  #columns = list(
-  #   view = reactable::colDef(
-  #     cell = function(value) {
-  #    htmltools::tags$a(href = value, target = "_blank", 'View')
-  #  }
-  #  )
-  #),
-  caption = 'Overview of prediction models developed {#tbl-prediction-summary}'
-  ) 
+  columns = list(
+    model_design = reactable::colDef(
+      html = T, 
+      name = 'Model Design' 
+      ),
+    number_targets = reactable::colDef(
+      name = 'Parent Target Count' 
+      ),
+    number_targets_with_subsets = reactable::colDef(
+      name = 'Target Count' 
+      ),
+    number_outcomes = reactable::colDef(
+      name = 'Parent Outcome Count' 
+      ),
+    number_outcomes_with_subsets = reactable::colDef(
+      name = 'Outcome Count' 
+      ),
+    timeAtRisk = reactable::colDef(
+      name = 'Time-at-risk',
+      width = 200
+      ),
+    covariates = reactable::colDef(
+      name = 'Covariate Set', 
+      width = 300
+      )
+    
+    )#,
+  #caption = 'Overview of prediction models developed {#tbl-prediction-summary}'
+  )
   
 ```
 
@@ -79,12 +143,33 @@ modelEvaluation <- data.frame(rbind(
   
 ```
 
+### Model Design {#sec-model-designs}
 ```{r results='asis', echo=FALSE}
-    for (i in 1:length(PatientLevelPredictionModuleSettings$settings$modelDesignList)) {
-      modelDesignSetting <- PatientLevelPredictionModuleSettings$settings$modelDesignList[[i]]
+    for (i in 1:length(modelDesignUnique)) {
+      modelDesignSetting <- modelDesignUnique[[i]]
+      tosSub <- tos[tos$designId == i,]
       modelDesign <- knitr::knit_child("prediction/model-design.Rmd", quiet = TRUE, envir = environment())
       cat(modelDesign, sep = '\n')
     }
 ```
 
-:::
+
+
+```{r plp_cohort_tracker, echo=FALSE, results = 'asis',include=FALSE}
+
+# code to get the targets and outcomes for c
+# and add to the cohortTracker
+
+cohortTracker <- rbind(
+  cohortTracker,
+  data.frame(
+  type = c(
+    rep('plpTarget', length(unique(tos$cohortIdTarget))),
+    rep('plpOutcome', length(unique(tos$cohortIdOutcome)))
+    ),
+  cohortId = c(unique(tos$cohortIdTarget), unique(tos$cohortIdOutcome)),
+  value = 1
+  )
+)
+
+```

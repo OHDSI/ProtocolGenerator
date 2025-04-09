@@ -2,7 +2,7 @@
 output: html_document
 ---
   
-#### Analysis
+##### Analysis
 
 The model that will be trained is a ``r attr(modelDesignSetting$modelSettings$param,'settings')$name `` that uses the `PatientLevelPrediction` function ``r modelDesignSetting$modelSettings$fitFunction `` to fit the model.
 

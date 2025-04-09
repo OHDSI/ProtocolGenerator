@@ -1,8 +1,8 @@
 Package: ProtocolGenerator
 Type: Package
 Title: Generate HTML OHDSI study protocols
-Version: 0.0.2
-Date: 2024-10-16
+Version: 1.0.0
+Date: 2025-4-9
 Authors@R: c(
   person("Jenna", "Reps", email = "jreps@its.jnj.com", role = c("aut", "cre"))
   )
@@ -20,7 +20,8 @@ Imports:
   quarto,
   reactable,
   rlang,
-  ROhdsiWebApi
+  ROhdsiWebApi,
+  shiny
 Suggests:
   Characterization,
   CohortIncidence,

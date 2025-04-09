@@ -5,40 +5,82 @@ output: html_document
 ## Cohorts  
 
 ```{r echo=FALSE, results='asis'}
-for(i in 1:length(cohortDefinitions)){
-  cat('\n### ', cohortDefinitions[[i]]$cohortName, paste0('{#sec-',i,'}') ,'\n')
+
+if(params$addCohortDefinitions){
+  
+  # how to arrange the cohorts?
+  parentCohortsInd <- which(cohortDefintionDf$isParent)
+  # order this by cohortName
+  names <- unlist(lapply(parentCohortsInd, function(i){cohortDefinitions[[i]]$cohortName}))
+  parentCohortsInd <- parentCohortsInd[order(names)]
+  
+  # For each parent display the parent logic
+for(i in parentCohortsInd){
+  cat('\n### ', cohortDefinitions[[i]]$cohortName, paste0('{#cohort-',cohortDefinitions[[i]]$cohortId,'}') ,'\n')
   
   markdown <- tryCatch(
   {CirceR::cohortPrintFriendly(cohortDefinitions[[i]]$cohortDefinition)}, 
   error = function(e) return('')
-)
-#markdown <- gsub('###', '####',markdown)
-cat(markdown)
+  )
+  #markdown <- gsub('###', '####',markdown)
+  cat('\n\n::: {.callout-note collapse="false"}\n')
+  cat('## Cohort Definition\n\n')
+  cat(markdown)
+  cat('\n\n:::\n\n')
 
-# add subset details
-if(!is.null(cohortDefinitions[[i]]$subsetDefinition)){
+  if(F){
+# Then display the subset logic with link to subsetDef section containing subsetUnique
+  subCohortInds <- setdiff(which(cohortDefintionDf$parentId == cohortDefinitions[[i]]$cohortId), i)
   
-  # add the settings as a table
-  subsetTable <- jsonlite::fromJSON(
-    txt = cohortDetails$cohortDefinitions[[i]]$subsetDefinition
-    )$subsetOperator
+  if(length(subCohortInds) >0){
+    
+  # order the subCohorts
+  subnames <- cohortDefintionDf$cohortName[subCohortInds]
+  subCohortInds <- subCohortInds[order(subnames)]
+    
+  for(subInd in subCohortInds){
+    cat('\n#### ', cohortDefintionDf$cohortName[subInd], paste0('{#cohort-',cohortDefintionDf$cohortId[subInd],'}\n'),'')
+  cat('\n\n::: {.callout-important collapse="true"}\n')
+  cat('## Subset Definition\n\n')
+ 
+  #print(ParallelLogger::convertJsonToSettings(
+  #  cohortDefinitions[[subInd]]$subsetDefinition
+  #  )$subsetOperators)
+  #print(shiny::tagList(reactable::reactable(
+  #    data = t(as.data.frame(
+  #      
+  #    )), 
+  #    striped = T
+  #)))
   
-  cat("\n#### Subset operator: \n")
-  
-  print(
-   htmltools::tagList(
-    reportTableFormat(
-      table = subsetTable
-    )
-   )
- )
+  cat('\n\n:::\n\n')
+    
+  }
+  }
+  } # end subset code
 }
-  
 }
 
-#json$sharedResources[[2]]$negativeControlOutcomes
 ```
 
+```{r echo=FALSE, results='asis'}
 
+# if there are subsets add them here
+if(!is.null(subsetDefs)){
+cat('\n\n## Subsets \n')
+  
+  for(i in 1:length(subsetUnique)){
+        cat('\n### ', paste0('Subset Definition ', i), paste0(' {#subset-',i,'}\n'),'')
+        cat('\n\n')
+        cat('\n\n::: {.callout-important collapse="false"}\n')
+  cat(paste0('## ',subsetUnique[[i]]$subsetType,'\n\n'))
+     print(shiny::tagList(reactable::reactable(
+      data = t(as.data.frame(subsetUnique[[i]])), 
+      striped = T
+    )))
+     cat('\n\n:::\n\n')
+  }
+  
+}
 
-
+```

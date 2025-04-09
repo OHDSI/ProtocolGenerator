@@ -1,6 +1,6 @@
 ---
 title: "ASSURE Study Protocol"
-date: 2023-02-10
+date: today
 date-format: short
 title-block-banner: true
 format:
@@ -14,10 +14,19 @@ params:
   jsonLocation: NULL
   dataDiagnosticFolder: NULL
   webAPI: 'https://api.ohdsi.org/WebAPI'
+  addCohortDefinitions: false
+  downloadConcepts: false
+  conceptsAsExcel: false
+  conceptFolder: ''
+  authMethod: NULL 
+  webApiUsername: NULL 
+  webApiPassword: NULL
 ---
 
-```{r echo=FALSE, hide = TRUE, include=FALSE}
+```{r cohort_extraction, echo=FALSE, hide = TRUE, include=FALSE}
+library(dplyr)
 library(ProtocolGenerator)
+cohortTracker <- c() # this will add cohorts used in the spec
 json <- ParallelLogger::loadSettingsFromJson(params$jsonLocation)
 modulesInJson <- unlist(lapply(json$moduleSpecifications, function(x) x$module))
 
@@ -27,7 +36,110 @@ cohortDetails <- ProtocolGenerator::getCohortDefinitionsFromJson(json)
 cohortDefinitions <- cohortDetails$cohortDefinitions
 cohortIds <- cohortDetails$cohortIds
 cohortNames <- cohortDetails$cohortNames
-subsetDefs <- cohortDetails$subsetDefs
+cohortNamesLink <- paste0(cohortNames, ' <a href="#cohort-',cohortIds,'">View</a>')
+#cohortNamesLink <- paste0(cohortNames, ' (@cohort-',cohortIds, ')')
+
+subsetIds <- unlist(lapply(cohortDefinitions, function(x){
+  if(!is.null(x$subsetDefinition)){
+    ParallelLogger::convertJsonToSettings(x$subsetDefinition)$definitionId
+  } else{
+  return(-1)
+}
+}))
+
+cohortDefintionDf <- data.frame(
+  cohortName = cohortNames,
+  cohortNameWithLink = cohortNamesLink,
+  cohortId = cohortIds,
+  subsetId = subsetIds,
+  isParent = subsetIds == -1,
+  parentId = cohortIds,
+  parentName = cohortNames
+)
+cohortDefintionDf$parentId[!cohortDefintionDf$isParent] <- (cohortDefintionDf$cohortId - cohortDefintionDf$subsetId)[!cohortDefintionDf$isParent]/1000
+cohortDefintionDf$parentName <- sapply(cohortDefintionDf$parentId, function(x){
+  paste0(cohortNames[which(x == cohortIds)], ' <a href="#cohort-',x,'">View</a>')
+  }
+  )
+  
+# =========== SUBSETS ============
+#==================================
+subsetDefs <- cohortDetails$subSetDefs
+if(!is.null(subsetDefs)){
+subsetDefs <- lapply(subsetDefs$json, function(x) ParallelLogger::convertJsonToSettings(x))
+
+subsetOps <- lapply(subsetDefs, function(x){
+  x$subsetOperators
+})
+
+# remove name and extract cohortIds when subsetType == "CohortSubsetOperator"
+subsetUnique <- subsetOps
+subsetUniqueAppend <- list()
+for(sind in 1:length(subsetUnique)){
+  for(sind2 in 1:length(subsetUnique[[sind]])){
+    subsetUnique[[sind]][[sind2]]$name <- NULL 
+    if(subsetUnique[[sind]][[sind2]]$subsetType == 'CohortSubsetOperator'){
+      subsetUnique[[sind]][[sind2]]$cohortIds <- NULL
+    }
+  }
+  subsetUniqueAppend <- append(subsetUniqueAppend,subsetUnique[[sind]])
+}
+subsetUnique <- unique(subsetUniqueAppend)
+
+# now extract into a data.frame and find out which subsets were used
+# get subsetId cohorts 
+
+subsetDetails <- do.call('rbind', lapply(subsetDefs, function(x){
+  data.frame(
+    subsetName = x$name,
+    subsetId = x$definitionId,
+    packageVersion = x$packageVersion,
+    #identifierExpression = x$identifierExpression,
+    #operatorNameConcatString = x$operatorNameConcatString,
+    #subsetCohortNameTemplate = x$subsetCohortNameTemplate,
+    numberSubsetOperators = length(x$subsetOperators)
+  )
+}))
+
+# add CohortSubsetOperator subset cohorts
+subsetDetails$subsetCohorts <- unlist(lapply(subsetOps, function(x){
+  paste(unlist(lapply(x, function(y){
+    if(y$subsetType == 'CohortSubsetOperator'){
+      if(y$negate == FALSE){
+        
+        ytemp <- y
+        ytemp$name <- NULL
+        ytemp$cohortIds <- NULL
+        subsetInd <- which(unlist(lapply(subsetUnique, function(x) identical(ytemp, x))))
+        
+        # add cohort link below
+        return(paste0("<a href='#cohort-",y$cohortIds,"'> View Cohort</a> <a href='#subset-",subsetInd,"'> View Subset</a>"))
+      }
+    } 
+    return(NULL)
+  }
+         )), collapse = ',')
+}))
+
+subsetDetails$appliedSubsets <- unlist(lapply(subsetOps, function(x){
+  paste(unlist(lapply(x, function(y){
+        ytemp <- y
+        ytemp$name <- NULL
+        ytemp$cohortIds <- NULL
+        subsetInd <- which(unlist(lapply(subsetUnique, function(x) identical(ytemp, x))))
+        return(paste0("<a href='#subset-",subsetInd,"'> View Subset</a>" ))
+    }
+    )), collapse = ',')
+}))
+
+# add subset details to cohortDefintionDf?
+cohortDefintionDf <- merge(cohortDefintionDf, subsetDetails, by = 'subsetId', all.x = T)
+  
+# return: subsetUnique - a list of subset logics
+#         subsetDetails - a data.frame with subset details 
+#         cohortDefintionDf - cohort definition with subset details added
+
+} # end if subsetDefs is not null
 
 if("negativeControlOutcomes" %in% unlist(lapply(json$sharedResources, function(x) names(x)))){
   
@@ -39,7 +151,6 @@ if("negativeControlOutcomes" %in% unlist(lapply(json$sharedResources, function(x
   
   negativeControls$occurrenceType <- negativeControlsTemp$occurrenceType
   negativeControls$detectOnDescendants <- negativeControlsTemp$detectOnDescendants
-  
   
 }
 ```
@@ -90,7 +201,7 @@ if(!is.null(params$dataDiagnosticFolder)){
 
 # RESEARCH METHODS
 
-```{r results='asis', echo=FALSE}
+```{r cohort_inc, results='asis', echo=FALSE}
 if("CohortIncidenceModule" %in% modulesInJson){
   
 CohortIncidenceModuleSettings <- json$moduleSpecifications[[which("CohortIncidenceModule" == modulesInJson)]]
@@ -100,7 +211,7 @@ cat(result, sep = '\n')
       
 ```
 
-```{r results='asis', echo=FALSE}
+```{r char, results='asis', echo=FALSE}
 if("CharacterizationModule" %in% modulesInJson){
   
 CharacterizationModuleSettings <- json$moduleSpecifications[[which("CharacterizationModule" == modulesInJson)]]
@@ -110,7 +221,7 @@ result <- knitr::knit_child("characterization.qmd", quiet = TRUE, envir = enviro
       
 ```
 
-```{r results='asis', echo=FALSE}
+```{r cm, results='asis', echo=FALSE}
 if("CohortMethodModule" %in% modulesInJson){
   
 cohortMethodModuleSettings <- json$moduleSpecifications[[which("CohortMethodModule" == modulesInJson)]]
@@ -120,7 +231,7 @@ result <- knitr::knit_child("cohort-method.qmd", quiet = TRUE, envir = environme
       
 ```
 
-```{r results='asis', echo=FALSE}
+```{r sccs, results='asis', echo=FALSE}
 if("SelfControlledCaseSeriesModule" %in% modulesInJson){
   
 SelfControlledCaseSeriesModuleSettings <- json$moduleSpecifications[[which("SelfControlledCaseSeriesModule" == modulesInJson)]]
@@ -130,7 +241,7 @@ result <- knitr::knit_child("self-control-case-series.qmd", quiet = TRUE, envir 
       
 ```
 
-```{r results='asis', echo=FALSE}
+```{r plp, results='asis', echo=FALSE}
 if("PatientLevelPredictionModule" %in% modulesInJson){
   
 PatientLevelPredictionModuleSettings <- json$moduleSpecifications[[which("PatientLevelPredictionModule" == modulesInJson)]]
@@ -142,8 +253,11 @@ result <- knitr::knit_child("patient-level-prediction.Rmd", quiet = TRUE, envir 
 
 # APPENDIX
 
-```{r, child = "cohorts.Rmd"}
+```{r cohort, child = "cohorts.Rmd"}
 ```
 
-```{r, child = "concepts.Rmd"}
+```{r concepts, child = "concepts.Rmd"}
+```
+
+```{r concepts, child = "table-use.Rmd"}
 ```

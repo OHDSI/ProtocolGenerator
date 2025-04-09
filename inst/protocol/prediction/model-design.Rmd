@@ -1,12 +1,12 @@
 
-```{r echo=FALSE, results='asis'}
-cat('\n### Model Design ', i, paste0(' {#sec-model-design-',i,'}'),' \n')
+```{r, echo=FALSE, results='asis'}
+cat('\n\n#### Model Design ', i, paste0(' {#sec-model-design-',i,'}'),' \n\n')
+```
+
+```{r, child = "prediction/plp-targets-outcomes.Rmd"}
 ```
 
 ```{r, child = "prediction/plp-participants.Rmd"}
-```
-
-```{r, child = "prediction/plp-outcome.Rmd"}
 ```
 
 ```{r, child = "prediction/plp-predictors.Rmd"}

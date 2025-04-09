@@ -1,2 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+compare_versions
+deploy.sh
+extras
+.Rhistory

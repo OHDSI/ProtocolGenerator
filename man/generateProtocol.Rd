@@ -5,27 +5,51 @@
 \title{generateProtocol}
 \usage{
 generateProtocol(
-  jsonLocation = getDemoLoc(),
+  jsonLocation,
+  json,
   dataDiagnosticFolder = NULL,
   webAPI,
+  authMethod = NULL,
+  webApiUsername = NULL,
+  webApiPassword = NULL,
   outputLocation = getwd(),
   outputName = paste0("protocol_", gsub(":", "_", gsub(" ", "_", as.character(date()))),
     ".html"),
-  intermediateDir = tempdir()
+  intermediateDir = tempdir(),
+  downloadConcepts = TRUE,
+  conceptsAsExcel = FALSE,
+  conceptFolder = outputLocation,
+  addCohortDefinitions = TRUE
 )
 }
 \arguments{
 \item{jsonLocation}{The location of the json specification}
 
+\item{json}{The json specification as an R list (this can be used instead of jsonLocation)}
+
 \item{dataDiagnosticFolder}{The location of the database diagnostic results}
 
 \item{webAPI}{the webAPI address}
+
+\item{authMethod}{The webAPI authorization method (optional)}
+
+\item{webApiUsername}{The webAPI authorization username (optional)}
+
+\item{webApiPassword}{The webAPI authorization password (optional)}
 
 \item{outputLocation}{The file location and name to save the protocol}
 
 \item{outputName}{The name of the html protocol that is created}
 
 \item{intermediateDir}{The work directory for quarto}
+
+\item{downloadConcepts}{Whether to download the concepts from webAPI for the cohorts (can be slow)}
+
+\item{conceptsAsExcel}{Whether to save the concepts into excel files rather than embed into html file if downloadConcepts is TRUE}
+
+\item{conceptFolder}{The location to save the excel files if downloadConcepts is TRUE and conceptsAsExcel is TRUE}
+
+\item{addCohortDefinitions}{Whether to add the cohorts to the protocol (can make document large)}
 }
 \value{
 An named R list with the elements 'standard' and 'source'

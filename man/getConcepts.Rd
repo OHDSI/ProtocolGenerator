@@ -4,10 +4,16 @@
 \alias{getConcepts}
 \title{getConcepts}
 \usage{
-getConcepts(conceptIds, baseUrl = "https://api.ohdsi.org/WebAPI")
+getConcepts(
+  expression,
+  conceptIds = NULL,
+  baseUrl = "https://api.ohdsi.org/WebAPI"
+)
 }
 \arguments{
-\item{conceptIds}{A list of concept ids to extract details about from ATLAS webapi}
+\item{expression}{A concept set expression to extract details about from ATLAS webapi}
+
+\item{conceptIds}{A vector of conceptsIds to extract details about from ATLAS webapi}
 
 \item{baseUrl}{The ATLAS baseUrl}
 }

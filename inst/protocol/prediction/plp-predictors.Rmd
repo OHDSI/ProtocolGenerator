@@ -2,7 +2,7 @@
 output: html_document
 ---
   
-#### Predictors
+##### Predictors
 
 **Candidate predictors**
 The predictors are determined using data recorded relative to the target cohort index date.  The settings `endDays` specifies the number of days relative to the target index that is the latest point in time for determining the covariates.  For example, an `endDays` of -1 means that no data recorded on index or after are used by the covariates (the covariates only use data recorded up to index-1 day).
@@ -12,12 +12,11 @@ if(class(modelDesignSetting$covariateSettings) == 'covariateSettings'){
   modelDesignSetting$covariateSettings <- list(modelDesignSetting$covariateSettings)
 }
 cat('\n There are ', length(modelDesignSetting$covariateSettings), ' covariate settings. \n')
-for(j in 1:length(modelDesignSetting$covariateSettings)){
-  
-   cat('\n Covariate Setting', j, '\n')
+
+#for(j in 1:length(modelDesignSetting$covariateSettings)){
+#cat('\n Covariate Setting', j, '\n')
   
   covariateDetails <- formatCovariateSettings(modelDesignSetting$covariateSettings)
-  
   
 print(
   shiny::tagList(
@@ -29,7 +28,7 @@ print(
   )
 )
   cat('\n \n')
-}
+#}
 ```
 
 **Feature Engineering**

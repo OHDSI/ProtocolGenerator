@@ -4,7 +4,13 @@
 \alias{reportTableFormat}
 \title{reportTableFormat}
 \usage{
-reportTableFormat(table, groupBy = NULL, columns = NULL, caption)
+reportTableFormat(
+  table,
+  groupBy = NULL,
+  columns = NULL,
+  elementId = NULL,
+  caption
+)
 }
 \arguments{
 \item{table}{data.frame or tibble with the data to present}
@@ -12,6 +18,8 @@ reportTableFormat(table, groupBy = NULL, columns = NULL, caption)
 \item{groupBy}{column to group by (optional)}
 
 \item{columns}{The column details (create default using defaultColumns())}
+
+\item{elementId}{Element ID for the widget.}
 
 \item{caption}{A table caption}
 }

@@ -13,7 +13,7 @@
 #' 
 getDemoLoc <- function(){
   return(system.file(
-    'demo', 
+    'demoJson', 
     "example.json", 
     package = "ProtocolGenerator"
   ))
@@ -30,24 +30,56 @@ getDemoLoc <- function(){
 #' protocol saved.
 #' 
 #' @param jsonLocation The location of the json specification
+#' @param json The json specification as an R list (this can be used instead of jsonLocation)
 #' @param dataDiagnosticFolder The location of the database diagnostic results
 #' @param webAPI the webAPI address
+#' @param authMethod The webAPI authorization method (optional) 
+#' @param webApiUsername The webAPI authorization username (optional) 
+#' @param webApiPassword The webAPI authorization password (optional) 
 #' @param outputLocation The file location and name to save the protocol 
 #' @param outputName The name of the html protocol that is created
 #' @param intermediateDir The work directory for quarto
+#' @param downloadConcepts Whether to download the concepts from webAPI for the cohorts (can be slow)
+#' @param conceptsAsExcel Whether to save the concepts into excel files rather than embed into html file if downloadConcepts is TRUE
+#' @param conceptFolder The location to save the excel files if downloadConcepts is TRUE and conceptsAsExcel is TRUE
+#' @param addCohortDefinitions Whether to add the cohorts to the protocol (can make document large)
+#' 
 #' @return
 #' An named R list with the elements 'standard' and 'source'
 #'
 #' @export
 #' 
 generateProtocol <- function(
-    jsonLocation = getDemoLoc(),
+    jsonLocation,
+    json,
     dataDiagnosticFolder = NULL,
     webAPI,
+    authMethod = NULL,
+    webApiUsername = NULL,
+    webApiPassword = NULL,
     outputLocation = getwd(),
     outputName = paste0('protocol_', gsub(':', '_',gsub(' ','_',as.character(date()))),'.html'),
-    intermediateDir = tempdir()
+    intermediateDir = tempdir(),
+    downloadConcepts = TRUE,
+    conceptsAsExcel = FALSE,
+    conceptFolder = outputLocation,
+    addCohortDefinitions = TRUE
 ){
+  
+  if(missing(jsonLocation)){
+    if(missing(json)){
+      stop('Must enter either jsonLocation or json')
+    } else{
+      
+      # could have issues if multiple runs at the same time?
+      jsonLocation <- file.path(tempdir(), 'spec.json')
+      
+      ParallelLogger::saveSettingsToJson(
+        object = json, 
+        fileName = jsonLocation
+        )
+    }
+  }
   
   protocolLoc <- system.file(
     'protocol', 
@@ -91,7 +123,14 @@ generateProtocol <- function(
     execute_params = list(
       jsonLocation = jsonLocation,
       dataDiagnosticFolder = dataDiagnosticFolder,
-      webAPI = webAPI
+      webAPI = webAPI,
+      authMethod = authMethod,
+      webApiUsername = webApiUsername,
+      webApiPassword = webApiPassword,
+      downloadConcepts = downloadConcepts,
+      addCohortDefinitions = addCohortDefinitions,
+      conceptsAsExcel = conceptsAsExcel,
+      conceptFolder = conceptFolder
     )
   )
   

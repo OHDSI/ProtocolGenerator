@@ -5,7 +5,77 @@ output: html_document
 ## Concept sets 
 
 ```{r echo=FALSE, results='asis'}
+
 library(dplyr) # need to check why this is needed?
+
+# if download is true we will extract concept sets
+if(params$downloadConcepts){
+  
+    # if authorise
+  if(!is.null(params$authMethod)){
+  ROhdsiWebApi::authorizeWebApi(
+    baseUrl = params$webAPI, 
+    authMethod = params$authMethod, 
+    webApiUsername = params$webApiUsername, 
+    webApiPassword = params$webApiPassword
+      )
+  }
+  
+  # if you chose to download as excel make the excel file
+  if(params$conceptsAsExcel){
+    if(!dir.exists(params$conceptFolder)){
+      dir.create(params$conceptFolder, recursive = T)
+    }
+
+    conceptsAdded <- c()
+    
+    for(i in 1:length(cohortDefinitions)){
+conceptSets <- ParallelLogger::convertJsonToSettings(cohortDefinitions[[i]]$cohortDefinition)$ConceptSets
+
+if(length(conceptSets)>0){
+for(j in 1:length(conceptSets)){
+  
+  if(!conceptSets[[j]]$name %in% conceptsAdded){
+    
+    # how to include desc?
+    conceptDf <- data.frame(
+    conceptId = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$concept$CONCEPT_ID)),
+    isExcluded = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$isExcluded)),
+    includeDescendants = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$includeDescendants)),
+    includeMapped = unlist(lapply(conceptSets[[j]]$expression$items, function(x) x$includeMapped))
+  )
+    if(length(conceptDf$conceptId)>0){
+      
+    # resolveConceptSet()
+    concepts <- getConcepts(
+    expression = conceptSets[[j]]$expression,
+    baseUrl = params$webAPI
+    )
+    
+    # first tab is conceptDf, then standard, then source
+    # save as excel file with the name of the concept
+    wb <- openxlsx::buildWorkbook(
+      list(
+        conceptDefinition = conceptDf,
+        standardConcepts = concepts$standard,
+        sourceConcepts = concepts$source
+      )
+    )
+    openxlsx::saveWorkbook(
+      wb = wb, 
+      file = file.path(params$conceptFolder, paste0(conceptSets[[j]]$name,'.xlsx'))
+    )
+    
+    } # end if there are concepts
+    
+    conceptsAdded <- c(conceptsAdded, conceptSets[[j]]$name)
+  }
+}
+}
+}
+   
+  } else{
+
 printedNames <- c()
 for(i in 1:length(cohortDefinitions)){
 conceptSets <- ParallelLogger::convertJsonToSettings(cohortDefinitions[[i]]$cohortDefinition)$ConceptSets
@@ -27,8 +97,9 @@ for(j in 1:length(conceptSets)){
       cat('\n### ', conceptSets[[j]]$name, '\n')
       
     concepts <- getConcepts(
-    conceptIds = conceptDf$conceptId, 
-    baseUrl = params$webAPI
+    #conceptIds = conceptDf$conceptId, 
+      expression = conceptSets[[j]]$expression,
+      baseUrl = params$webAPI
     )
     
  cat("\n::: panel-tabset\n")
@@ -36,8 +107,7 @@ for(j in 1:length(conceptSets)){
  print(
    htmltools::tagList(
     reportTableFormat(
-      table = merge(concepts$standard, conceptDf) %>% 
-        dplyr::select("conceptId","conceptName", "domainId", "vocabularyId","conceptClassId", "includeDescendants", "isExcluded", "includeMapped"),
+      table = concepts$standard,
       columns = list(
         conceptName = reactable::colDef(filterable = T),
         domainId = reactable::colDef(filterable = T),
@@ -75,7 +145,9 @@ for(j in 1:length(conceptSets)){
 
 }
 
-#json$sharedResources[[2]]$negativeControlOutcomes
+  } # else 
+} # if download
+
 ```
 
 
