@@ -141,6 +141,7 @@ cohortDefintionDf <- merge(cohortDefintionDf, subsetDetails, by = 'subsetId', al
 
 } # end if subsetDefs is not null
 
+negativeControls <- NULL
 if("negativeControlOutcomes" %in% unlist(lapply(json$sharedResources, function(x) names(x)))){
   
   negativeControlInd <- which(unlist(lapply(json$sharedResources, function(x) "negativeControlOutcomes" %in% names(x)))) 

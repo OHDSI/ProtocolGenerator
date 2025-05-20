@@ -16,6 +16,29 @@ package <- 'CohortMethod'
       )
   }
 
+# if negative controls not in share resources check for any in targetComparatorOutcomesList
+if(is.null(negativeControls)){
+  tcoList <- cohortMethodModuleSettings$settings$targetComparatorOutcomesList
+cmNeg <- lapply(tcoList, function(x){
+  temp <- do.call('rbind',lapply(x$outcomes, function(x2){
+    dat <- data.frame(
+      cohortId = x2$outcomeId,
+      #conceptId = 'NA',
+      outcomeConceptId = 'NA',
+      outcomeOfInterest = x2$outcomeOfInterest,
+      priorOutcomeLookback = ifelse(is.null(x2$priorOutcomeLookback),0, x2$priorOutcomeLookback)
+    )
+    # merge with cohortDefinitions
+    dat <- merge(dat, cohortDefintionDf[,c('cohortId', 'cohortName')], by = 'cohortId')
+  }))
+  temp[!temp$outcomeOfInterest,]
+}
+)
+  negativeControlsCM <- do.call(rbind, cmNeg)
+} else{
+  negativeControlsCM <- negativeControls
+}
+
 # get tars
 tars <- unlist(lapply(cohortMethodModuleSettings$settings$cmAnalysisList, function(x) paste0('\n- (',x$createStudyPopArgs$startAnchor, '+' ,x$createStudyPopArgs$riskWindowStart, ') - (', x$createStudyPopArgs$endAnchor, '+' ,x$createStudyPopArgs$riskWindowEnd, ')')))
 
@@ -452,7 +475,7 @@ if(length(concepts$standard) > 0){
         data.frame(
           cohortId = commonNegativeId
         ), 
-        negativeControls, 
+        negativeControlsCM, 
         by = 'cohortId', 
         all.x = T
         ) %>% dplyr::arrange(.data$cohortName), 
@@ -486,7 +509,7 @@ if(length(concepts$standard) > 0){
         data.frame(
           cohortId = nonCommonNegSets[[ncsInd]]
         ), 
-        negativeControls, 
+        negativeControlsCM, 
         by = 'cohortId', 
         all.x = T
         ), 

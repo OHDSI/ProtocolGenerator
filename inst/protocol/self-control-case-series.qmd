@@ -6,7 +6,6 @@ output: html_document
 
 package <- "SelfControlledCaseSeries"
 
-
 eo <- do.call(
   what = rbind,
   args = lapply(
@@ -26,6 +25,34 @@ eo <- do.call(
   )
   )
 
+# ===== NEW FOR COHORT NEGATIVE CONTROLS
+# add code to extract negative controls if missing
+if(is.null(negativeControls)){
+  # create negative control data.frame using the exposure outcomes with trueEffectSize == 1
+neg <- do.call(
+  what = rbind,
+  args = lapply(
+    X = 1:length(SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList),
+    FUN = function(k){
+      x <- SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList[[k]]
+      data.frame(
+        cohortId = rep(x$outcomeId, length(x$exposures)),
+        outcomeConceptId = 'NA',
+        occurrenceType = 'NA',
+        detectOnDescendants = 'NA',
+        trueEffectSize = unlist(lapply(x$exposures, function(x){ifelse(is.null(x$trueEffectSize), '', x$trueEffectSize )}))
+      )
+    }
+  )
+)
+
+  neg <- unique(neg[neg$trueEffectSize == 1,])
+  negativeControlsSCCS <- merge(neg, cohortDefintionDf[,c('cohortId', 'cohortName')], by = 'cohortId')
+} else{
+  negativeControlsSCCS <- negativeControls
+}
+# ===== END NEW FOR COHORT NEGATIVE CONTROLS
+
 # Should we unique?
 eoUnique <- eo
 #eoUnique <- unique(eo)
@@ -42,6 +69,12 @@ eoUnique <- merge(eoUnique, tempDf, by.x = 'nestingId', by.y = 'cohortIdIndicati
 
 # figure out unique negative controls vs shared
 neo <- eoUnique[eoUnique$trueEffectSize == 1 & eoUnique$exposureId != -1,]
+
+# set defaults when there are no negative controls
+negInCommon <- NULL
+negNotInCommon <- NULL
+
+if(nrow(neo) > 0 ){ #if any negative outcomes
 settings <- unique(neo$setting)
 negInCommon <- neo$outcomeId[neo$setting == settings[1]]
 for(ngi in 1:length(settings)){
@@ -60,7 +93,7 @@ negTabShared <- do.call(
   what = rbind,
   args = lapply(
   X = negInCommon, 
-  FUN = function(x){negativeControls[negativeControls$cohortId == x,]}
+  FUN = function(x){negativeControlsSCCS[negativeControlsSCCS$cohortId == x,]}
   )
 )
 
@@ -77,7 +110,7 @@ negTab <- do.call(
   what = rbind,
   args = lapply(
   X = negNotInCommon, 
-  FUN = function(x){negativeControls[negativeControls$cohortId == x,]}
+  FUN = function(x){negativeControlsSCCS[negativeControlsSCCS$cohortId == x,]}
   )
 )
 negTab$cohortId <- unlist(negTab$cohortId)
@@ -97,6 +130,8 @@ negTab <- negTab %>%
   dplyr::select(-c("cohortId","cohortName","outcomeConceptId"))
 
 } # end Negtab
+
+} # end if any negative outcomes
 
 eoOfInt <- unique(eoUnique[eoUnique$trueEffectSize == '' & eoUnique$exposureId != -1,])
 tempDf <- cohortDefintionDf
