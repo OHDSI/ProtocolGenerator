@@ -363,8 +363,18 @@ functionDefaults <- function(
     defaultInputs <-  lapply(1:length(inputs), 
                              function(i){
                                if(hasValue[i]){
-                                 if(!is.null(eval(inputs[[i]]))){
-                                   return(eval(inputs[[i]]))
+                                 if(!is.null(
+                                   tryCatch(
+                                     {eval(inputs[[i]])},
+                                     error = function(e){paste0(as.character(inputs[[i]]), collapse = ' ')}
+                                   )
+                                 )){
+                                   return(
+                                     tryCatch(
+                                       {eval(inputs[[i]], envir = inputs)}, # checking this works
+                                       error = function(e){paste0(as.character(inputs[[i]]), collapse = ' ')}
+                                       )
+                                   )
                                  } else{
                                    return("NULL")
                                  }

@@ -370,7 +370,9 @@ settingDf <- getSettingsTable(
   )
 )
    
-  if(inherits(analysisSetting$createIntervalDataArgs$eraCovariateSettings, "EraCovariateSettings")){
+   # in new R6 the way to check a list of settings is to see if the names are null
+   # so here I check for the class (old way) or not null names (R6 way)
+  if(inherits(analysisSetting$createIntervalDataArgs$eraCovariateSettings, "EraCovariateSettings") || !is.null(names(analysisSetting$createIntervalDataArgs$eraCovariateSettings)) ){
     analysisSetting$createIntervalDataArgs$eraCovariateSettings <- list(analysisSetting$createIntervalDataArgs$eraCovariateSettings)
   }
   for(l in 1:length(analysisSetting$createIntervalDataArgs$eraCovariateSettings)){
@@ -388,7 +390,7 @@ settingDf <- getSettingsTable(
     
   }
    if(!is.null(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings)){
-   if(inherits(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings, "CalendarTimeCovariateSettings")){
+   if(inherits(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings, "CalendarTimeCovariateSettings") || !is.null(names(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings))){
     analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings <- list(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings)
   }
   for(l in 1:length(analysisSetting$createIntervalDataArgs$calendarTimeCovariateSettings)){
@@ -408,7 +410,7 @@ settingDf <- getSettingsTable(
    }
    
    if(!is.null(analysisSetting$createIntervalDataArgs$ageCovariateSettings)){
-   if(inherits(analysisSetting$createIntervalDataArgs$ageCovariateSettings, "AgeCovariateSettings")){
+   if(inherits(analysisSetting$createIntervalDataArgs$ageCovariateSettings, "AgeCovariateSettings") || !is.null(names(analysisSetting$createIntervalDataArgs$ageCovariateSettings))){
     analysisSetting$createIntervalDataArgs$ageCovariateSettings <- list(analysisSetting$createIntervalDataArgs$ageCovariateSettings)
   }
   for(l in 1:length(analysisSetting$createIntervalDataArgs$ageCovariateSettings)){
@@ -428,7 +430,7 @@ settingDf <- getSettingsTable(
    }
    
       if(!is.null(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings)){
-   if(inherits(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings, "SeasonalityCovariateSettings")){
+   if(inherits(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings, "SeasonalityCovariateSettings") || !is.null(names(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings))){
     analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings <- list(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings)
   }
   for(l in 1:length(analysisSetting$createIntervalDataArgs$seasonalityCovariateSettings)){
