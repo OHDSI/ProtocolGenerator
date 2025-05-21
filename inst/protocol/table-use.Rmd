@@ -40,109 +40,320 @@ trackerCols = list(
     cohortId = reactable::colDef(
       name = 'Cohort Id'
     ),
-    ciTarget = reactable::colDef(cell = reactable::JS("
+    ciTarget = reactable::colDef(
+    cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-    ciOutcome = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }
+  ),
+  
+    ciOutcome = reactable::colDef(
+    cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-     cTarget = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+     cTarget = reactable::colDef(
+     cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-    cOutcome = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+    cOutcome = reactable::colDef(
+    cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-  tteTarget = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+  tteTarget = reactable::colDef(
+  cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-    tteOutcome = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+    tteOutcome = reactable::colDef(
+    cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-  dcrcTarget = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+  dcrcTarget = reactable::colDef(
+  cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-    dcrcOutcome = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+    dcrcOutcome = reactable::colDef(
+    cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-     cmTarget = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+     cmTarget = reactable::colDef(
+     cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-  cmComp = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+  cmComp = reactable::colDef(
+  cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-  cmOutcome = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+  cmOutcome = reactable::colDef(
+  cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-    sccsOutcome = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+    sccsOutcome = reactable::colDef(
+    cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-  sccsTarget = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+  sccsTarget = reactable::colDef(
+  cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-  sccsIndication = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+  sccsIndication = reactable::colDef(
+  cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-  plpTarget = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+  plpTarget = reactable::colDef(
+  cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  ")),
-  plpOutcome = reactable::colDef(cell = reactable::JS("
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      }),
+  plpOutcome = reactable::colDef(
+  cell = reactable::JS("
     function(cellInfo) {
       // Render as an X mark or check mark
       return cellInfo.value === 0 ? '\u274c No' : '\u2714\ufe0f Yes'
     }
-  "))
+  "), 
+  filterable = TRUE,
+  filterInput = function(values, name) {
+        shiny::tags$select(
+          # Set to undefined to clear the filter
+          onchange = sprintf("Reactable.setFilter('cohort-tracker', '%s', event.target.value || undefined)", name),
+          # "All" has an empty value to clear the filter, and is the default option
+          shiny::tags$option(value = "", "All"),
+          lapply(unique(values), shiny::tags$option),
+          "aria-label" = sprintf("Filter %s", name),
+          style = "width: 100%; height: 28px;"
+        )
+      })
   )
   
 reactable::reactable(
   data = cohortTrackerAll %>% 
     dplyr::arrange(.data$parentName, .data$cohortName), 
-  groupBy = 'parentName',
-  columns = trackerCols[names(trackerCols) %in% colnames(cohortTrackerAll)]
+  #groupBy = 'parentName',
+  columns = trackerCols[names(trackerCols) %in% colnames(cohortTrackerAll)],
+    elementId = "cohort-tracker"
   )
 
 ```
