@@ -10,6 +10,7 @@ format:
     toc-depth: 6
     toc-expand: 2
     embed-resources: true
+    page-layout: full
 params: 
   jsonLocation: NULL
   dataDiagnosticFolder: NULL

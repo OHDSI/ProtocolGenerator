@@ -470,6 +470,37 @@ settingDf <- getSettingsTable(
 
 ```
 
+### Diagnostics
+
+```{r sccs_diagnostics, echo=FALSE, results = 'asis'}
+
+
+if('sccsDiagnosticThresholds' %in% names(SelfControlledCaseSeriesModuleSettings$settings)){
+ diagSetting <- SelfControlledCaseSeriesModuleSettings$settings$sccsDiagnosticThresholds
+ 
+  diagSettings <- getSettingsTable(
+    package = package,
+    functionName = 'createSccsDiagnosticThresholds',
+    settings  = diagSetting
+) 
+ 
+print(
+    htmltools::tagList(
+      reportTableFormat(
+      table = diagSettings,
+      columns = append(defaultColumns(diagSettings),
+                       list(
+                       desc = reactable::colDef(
+                         name = 'Description', 
+                         minWidth = 300
+                         )
+                     ))
+    )
+    )
+   )
+}
+
+```
 
 ```{r sccs_cohort_tracker, echo=FALSE, results = 'asis',include=FALSE}
 

@@ -722,6 +722,38 @@ getHelpText(
 
 ```
 
+### Diagnostics
+
+```{r, echo=FALSE, results = 'asis'}
+
+if('cmDiagnosticThresholds' %in% names(cohortMethodModuleSettings$settings)){
+ diagSetting <- cohortMethodModuleSettings$settings$cmDiagnosticThresholds
+ 
+  diagSettings <- getSettingsTable(
+    package = package,
+    functionName = 'createCmDiagnosticThresholds',
+    settings  = diagSetting
+) 
+ 
+print(
+    htmltools::tagList(
+      reportTableFormat(
+      table = diagSettings,
+      columns = append(defaultColumns(diagSettings),
+                       list(
+                       desc = reactable::colDef(
+                         name = 'Description', 
+                         minWidth = 300
+                         )
+                     ))
+    )
+    )
+   )
+}
+  
+
+```
+
 
 ```{r cm_cohort_tracker, echo=FALSE, results = 'asis',include=FALSE}
 

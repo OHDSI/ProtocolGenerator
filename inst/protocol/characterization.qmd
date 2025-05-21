@@ -284,11 +284,29 @@ cColumns <- list(
 
 ## Characterization
 
-### Target With and Without Outcome during TAR
+### Aggregate Covariates
+
+Aggregate covariates analysis executes three different types of characterization:
+
+**1. Target with and without outcome during TAR characterization**
 
 Differences in covariate mean values between the target population with the outcome during a time-at-risk (TAR) and the target population without the outcome during TAR will be run for all combinations or targets population, outcomes and TAR specified in the settings.  The results return the mean covariate value (for binary covariates this corresponds to the frequency of the covariate) for patients in the target population, for patients with the outcome, for patients in the target population with the outcome during the TAR and for patients in the target population without the outcome during the TAR.  The standardized mean difference (mean in group 1 - mean in group 2) divided by the standard deviation is calculated for the target population with the outcome and the target population without the outcome during TAR as this shows covariates that are associated to having the outcome during TAR (risk factors).
 
 For more details see [here](https://ohdsi.github.io/Characterization/articles/Specification.html#risk-factor-analysis) for risk factor analysis and [here](https://ohdsi.github.io/Characterization/articles/Specification.html#aggregate-covariates) for the mean covariate analysis for the target and outcome cohorts.
+
+
+**2. Case series**
+Aggregate covariate details are calculated for the cases (target population with the outcome during a time-at-risk) at three different time points: 
+
+1) before target index (before)
+2) between target index and first outcome date after target index (during)
+3) After first outcome date after target index (after)
+
+This can show how the patients with the outcome change over time.
+
+**3. Target and outcome characterization **
+Aggregate covariate details are calculated for the target population (first exposure with min prior observation) and the outcome cohort (first occurrence with min prior observation).
+
 
 There are ``r numSettings`` unique analysis settings @sec-char-settings ,  ``r countParents `` unique parent targets (``r countTarget `` unique target subsets) see @sec-char-targets ,  ``r length(unique(caAllDf$parentIdOutcome)) `` unique parent outcomes (``r length(unique(caAllDf$outcomeId))`` outcome subsets) see @sec-char-outcomes . 
 

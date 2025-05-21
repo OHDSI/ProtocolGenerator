@@ -389,11 +389,19 @@ functionDefaults <- function(
 }
 
 # settings to data.frame
-# TODO - user recursion here?
+# TODO - use recursion here?
 listToDf <- function(
     settings, 
     valueName = 'value'
     ){
+  
+  # convert vectors to char 
+  nameSet <- names(settings)
+  convertToChar <- sapply(nameSet, function(x) length(settings[[x]]) > 1 & !inherits(settings[[x]], 'list'))
+  if(sum(convertToChar) > 0){
+    settings[convertToChar] <- as.character(settings[convertToChar])
+  }
+  
   values <- unlist(settings)
   names <- names(values)
   
