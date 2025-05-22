@@ -24,7 +24,7 @@ cmNeg <- lapply(tcoList, function(x){
     dat <- data.frame(
       cohortId = x2$outcomeId,
       #conceptId = 'NA',
-      outcomeConceptId = 'NA',
+      outcomeConceptId = x2$outcomeId,
       outcomeOfInterest = x2$outcomeOfInterest,
       priorOutcomeLookback = ifelse(is.null(x2$priorOutcomeLookback),0, x2$priorOutcomeLookback)
     )
@@ -34,7 +34,7 @@ cmNeg <- lapply(tcoList, function(x){
   temp[!temp$outcomeOfInterest,]
 }
 )
-  negativeControlsCM <- do.call(rbind, cmNeg)
+  negativeControlsCM <- unique(do.call(rbind, cmNeg))
 } else{
   negativeControlsCM <- negativeControls
 }
@@ -466,7 +466,7 @@ if(length(concepts$standard) > 0){
 
   cat('\n#### Shared Negative Controls {#sec-cm-negset-0}\n')
   
-  cat(paste0('A total of ',nrow(unique(commonNegativeId)),' negative controls were included accross analyses. \n'))
+  cat(paste0('A total of ',length(unique(commonNegativeId)),' negative controls were included accross analyses. \n'))
   
   print(
     htmltools::tagList(

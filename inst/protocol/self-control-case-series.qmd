@@ -37,8 +37,8 @@ neg <- do.call(
       x <- SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList[[k]]
       data.frame(
         cohortId = rep(x$outcomeId, length(x$exposures)),
-        outcomeConceptId = 'NA',
-        occurrenceType = 'NA',
+        outcomeConceptId = rep(x$outcomeId, length(x$exposures)),
+        occurrenceType = 'Cohort',
         detectOnDescendants = 'NA',
         trueEffectSize = unlist(lapply(x$exposures, function(x){ifelse(is.null(x$trueEffectSize), '', x$trueEffectSize )}))
       )
@@ -98,7 +98,7 @@ negTabShared <- do.call(
 )
 
 negTabShared <- negTabShared %>% 
-  dplyr::mutate(outcomeName = paste(.data$cohortName, '(concept: ',.data$outcomeConceptId,')')) %>%
+  dplyr::mutate(outcomeName = paste(.data$cohortName, '(concept/cohort: ',.data$outcomeConceptId,')')) %>%
   dplyr::select(-c("cohortId","cohortName","outcomeConceptId"))
 
 } #end if length(negInCommon)>0
@@ -254,6 +254,7 @@ if(!"standardConcept" %in% colnames(negTabShared)){
 
 print(shiny::tagList(reportTableFormat(
   table = negTabShared %>%
+    dplyr::select("outcomeName", "standardConcept") %>%
     dplyr::relocate("outcomeName", .before = "standardConcept"),
   columns = list(
     outcomeName = reactable::colDef(
@@ -506,7 +507,7 @@ print(
 
 # code to get the targets and outcomes for c
 # and add to the cohortTracker
-
+if(nrow(eoOfInt) > 0){
 cohortTracker <- rbind(
   cohortTracker,
   data.frame(
@@ -519,5 +520,6 @@ cohortTracker <- rbind(
   value = 1
   )
 )
+}
 
 ```
