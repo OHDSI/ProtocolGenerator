@@ -1,0 +1,154 @@
+---
+output: html_document
+---
+
+```{r, echo=FALSE, results = 'asis', include=FALSE}
+
+cohortIdsCD <- CohortDiagnosticsSettings$cohortIds
+# if null then cohort diagnotics is applied to all cohorts in set
+if(is.null(cohortIdsCD)){
+  cohortIdsCD <- cohortDefintionDf$cohortId
+}
+
+# this should be a single settings rather than a list of settings
+temporalCovariateSettingsCD <- CohortDiagnosticsSettings$temporalCovariateSettings
+cdFeatureSettings <- data.frame(
+  input = names(temporalCovariateSettingsCD),
+  value = unlist(lapply(temporalCovariateSettingsCD, FUN = function(x) ifelse(is.null(x), 'NULL', as.character(x))))
+)
+rownames(cdFeatureSettings) <- NULL
+
+# non list settings
+cdSettings <- CohortDiagnosticsSettings
+cdSettings$cohortIds <- NULL
+cdSettings$temporalCovariateSettings <- NULL
+
+cdSettings <- data.frame(
+  input = names(cdSettings),
+  value = unlist(lapply(cdSettings, FUN = function(x) ifelse(is.null(x), 'NULL', as.character(x))))
+)
+
+rownames(cdSettings) <- NULL
+  
+# create target table
+targetDfCD <- cohortDefintionDf
+colnames(targetDfCD) <- paste0(colnames(targetDfCD), 'Target')
+targetDfCD <- targetDfCD[targetDfCD$cohortIdTarget %in% cohortIdsCD, ]
+
+# order the columns
+targetDfCD <- targetDfCD  %>% 
+  dplyr::relocate("cohortNameTarget") %>% 
+  dplyr::relocate("parentNameTarget") 
+
+cdColumns <- list(
+      subsetIdTarget = reactable::colDef(show = F),
+      isParentTarget = reactable::colDef(show = F),
+      parentIdTarget = reactable::colDef(show = F),
+      subsetNameTarget = reactable::colDef(show = F),
+      packageVersionTarget = reactable::colDef(show = F),
+      numberSubsetOperatorsTarget = reactable::colDef(show = F),
+      cohortIdTarget = reactable::colDef(show = F),
+
+      parentNameTarget = reactable::colDef(
+        name = 'Parent Target', 
+        defaultSortOrder = 'asc',
+        sortNALast = TRUE,
+        filterable = TRUE, 
+        minWidth = 300,
+        html = TRUE
+      ),
+
+      cohortNameTarget = reactable::colDef(
+        aggregate = "unique",
+        show = TRUE,
+        name = 'Target', 
+        defaultSortOrder = 'asc',
+        sortNALast = TRUE,
+        filterable = TRUE, 
+        minWidth = 300
+        ),
+      cohortNameWithLinkTarget = reactable::colDef(
+        show = FALSE,
+        name = 'Cohort', 
+        defaultSortOrder = 'asc',
+        sortNALast = TRUE,
+        filterable = TRUE, 
+        minWidth = 300,
+        html = TRUE
+      ),
+      subsetCohortsTarget = reactable::colDef(
+        html = TRUE,
+        aggregate = "count"
+        ),
+      appliedSubsetsTarget = reactable::colDef(
+        html = TRUE,
+        aggregate = "count"
+        )
+    )
+
+
+```
+
+## Cohort Diagnostics
+
+Cohort diagnostics is used to evaluate phenotypes. See [here](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0310634) for more details.
+
+### Cohorts
+
+Cohort diagnostics will be run for the following `r nrow(targetDfCD)` cohorts:
+
+```{r, echo=FALSE, results = 'asis'}
+ print(shiny::tagList(
+   ProtocolGenerator::reportTableFormat(
+    table = targetDfCD %>%
+      dplyr::arrange(.data$parentNameTarget,.data$cohortNameTarget), 
+    groupBy = 'parentNameTarget', 
+    columns = cdColumns[names(cdColumns) %in% colnames(targetDfCD)], 
+    caption = 'Cohorts included in Cohort Diagnostics.'
+    )))
+```
+
+
+### Settings
+
+The following cohort diagnostic settings are used:
+
+```{r, echo=FALSE, results = 'asis'}
+ print(shiny::tagList(
+   ProtocolGenerator::reportTableFormat(
+    table = cdSettings, 
+    caption = 'Settings.'
+    )))
+```
+ 
+and the temporal feature settings:
+
+```{r, echo=FALSE, results = 'asis'}
+ print(shiny::tagList(
+   ProtocolGenerator::reportTableFormat(
+    table = cdFeatureSettings, 
+    caption = 'Feature Settings.'
+    )))
+```
+ 
+
+
+```{r cd_cohort_tracker, echo=FALSE, results = 'asis',include=FALSE}
+
+# code to get the targets for cd
+# and add to the cohortTracker
+
+if(length(cohortIdsCD) > 0 ){
+cohortTracker <- rbind(
+  cohortTracker,
+  data.frame(
+  type = c(
+    rep('cdTarget', length(unique(cohortIdsCD)))
+    ),
+  cohortId = unique(cohortIdsCD),
+  value = 1
+  )
+)
+}
+
+```

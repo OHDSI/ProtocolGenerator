@@ -43,6 +43,7 @@ getDemoLoc <- function(){
 #' @param conceptsAsExcel Whether to save the concepts into excel files rather than embed into html file if downloadConcepts is TRUE
 #' @param conceptFolder The location to save the excel files if downloadConcepts is TRUE and conceptsAsExcel is TRUE
 #' @param addCohortDefinitions Whether to add the cohorts to the protocol (can make document large)
+#' @param exportCohortLocation if not NULL the location where the table tracter will be exported to csv.
 #' 
 #' @return
 #' An named R list with the elements 'standard' and 'source'
@@ -63,7 +64,8 @@ generateProtocol <- function(
     downloadConcepts = TRUE,
     conceptsAsExcel = FALSE,
     conceptFolder = outputLocation,
-    addCohortDefinitions = TRUE
+    addCohortDefinitions = TRUE,
+    exportCohortLocation = NULL
 ){
   
   if(missing(jsonLocation)){
@@ -130,7 +132,8 @@ generateProtocol <- function(
       downloadConcepts = downloadConcepts,
       addCohortDefinitions = addCohortDefinitions,
       conceptsAsExcel = conceptsAsExcel,
-      conceptFolder = conceptFolder
+      conceptFolder = conceptFolder,
+      exportCohortLocation = exportCohortLocation
     )
   )
   

@@ -22,6 +22,7 @@ params:
   authMethod: NULL 
   webApiUsername: NULL 
   webApiPassword: NULL
+  exportCohortLocation: NULL
 ---
 
 ```{r cohort_extraction, echo=FALSE, hide = TRUE, include=FALSE}
@@ -212,6 +213,17 @@ cat(result, sep = '\n')
 }
       
 ```
+
+```{r cohort_diagnostics, results='asis', echo=FALSE}
+if("CohortDiagnosticsModule" %in% modulesInJson){
+  
+CohortDiagnosticsSettings <- json$moduleSpecifications[[which("CohortDiagnosticsModule" == modulesInJson)]]$settings
+result <- knitr::knit_child("cohort-diagnostics.qmd", quiet = TRUE, envir = environment())
+      cat(result, sep = '\n')
+}
+      
+```
+
 
 ```{r char, results='asis', echo=FALSE}
 if("CharacterizationModule" %in% modulesInJson){
