@@ -9,9 +9,9 @@ package <- "SelfControlledCaseSeries"
 eo <- do.call(
   what = rbind,
   args = lapply(
-  X = 1:length(SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList),
+  X = 1:length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications$exposuresOutcomeList),
   FUN = function(k){
-    x <- SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList[[k]]
+    x <- SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications$exposuresOutcomeList[[k]]
     data.frame(
       setting = ifelse(is.null(x$jsonId), 1, x$jsonId), #k,
       outcomeId = rep(x$outcomeId, length(x$exposures)),
@@ -32,9 +32,9 @@ if(is.null(negativeControls)){
 neg <- do.call(
   what = rbind,
   args = lapply(
-    X = 1:length(SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList),
+    X = 1:length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications$exposuresOutcomeList),
     FUN = function(k){
-      x <- SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList[[k]]
+      x <- SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications$exposuresOutcomeList[[k]]
       data.frame(
         cohortId = rep(x$outcomeId, length(x$exposures)),
         outcomeConceptId = rep(x$outcomeId, length(x$exposures)),
@@ -153,7 +153,7 @@ The design requires the user to specify the target population of interest, an op
 
 In this specification there are ``r length(unique(eoOfInt$parentIdTarget))`` unique parent exposure cohorts (``r nrow(unique(eoOfInt[, c('exposureId', 'nestingId')]))`` unique exposure and indications combinations), see @sec-sccs-eo.  There is a total of ``r length(unique(eoOfInt$nestingId))`` unique indications.  A total of ``r length(unique(eoOfInt$parentIdOutcome))`` parent outcome cohorts (``r length(unique(eoOfInt$outcomeId))`` unique outcomes with subsets).
 
-In total there are ``r length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)`` different self controlled case series analysis designs (see @sec-sccs-analysis).
+In total there are ``r length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications$sccsAnalysisList)`` different self controlled case series analysis designs (see @sec-sccs-analysis).
 
 
 ### Exposure Indication Outcomes {#sec-sccs-eo}
@@ -305,9 +305,9 @@ cat('\n\n')
 ```{r sccs_analyses, echo=FALSE, results = 'asis'}
 
 
-for(i in 1:length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)){
+for(i in 1:length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications$sccsAnalysisList)){
   
-  analysisSetting <- SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList[[i]]
+  analysisSetting <- SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications$sccsAnalysisList[[i]]
     
   cat(
     paste0('#### Analysis ', analysisSetting$analysisId,': ', analysisSetting$description, ' \n'), 
@@ -476,8 +476,8 @@ settingDf <- getSettingsTable(
 ```{r sccs_diagnostics, echo=FALSE, results = 'asis'}
 
 
-if('sccsDiagnosticThresholds' %in% names(SelfControlledCaseSeriesModuleSettings$settings)){
- diagSetting <- SelfControlledCaseSeriesModuleSettings$settings$sccsDiagnosticThresholds
+if('sccsDiagnosticThresholds' %in% names(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications)){
+ diagSetting <- SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications$sccsDiagnosticThresholds
  
   diagSettings <- getSettingsTable(
     package = package,

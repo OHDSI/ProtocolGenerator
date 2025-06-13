@@ -34,7 +34,9 @@ Suggests:
   PatientLevelPrediction,
   remotes,
   rmarkdown,
-  SelfControlledCaseSeries,
+  SelfControlledCaseSeries (>= 6.0.0),
   testthat
+Remotes:
+  ohdsi/SelfControlledCaseSeries@version_6
 RoxygenNote: 7.3.2
 Encoding: UTF-8
