@@ -19,7 +19,8 @@ generateProtocol(
   downloadConcepts = TRUE,
   conceptsAsExcel = FALSE,
   conceptFolder = outputLocation,
-  addCohortDefinitions = TRUE
+  addCohortDefinitions = TRUE,
+  exportCohortLocation = NULL
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ generateProtocol(
 \item{conceptFolder}{The location to save the excel files if downloadConcepts is TRUE and conceptsAsExcel is TRUE}
 
 \item{addCohortDefinitions}{Whether to add the cohorts to the protocol (can make document large)}
+
+\item{exportCohortLocation}{if not NULL the location where the table tracter will be exported to csv.}
 }
 \value{
 An named R list with the elements 'standard' and 'source'
