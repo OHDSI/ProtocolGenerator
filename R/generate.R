@@ -120,7 +120,7 @@ generateProtocol <- function(
     )
 
   quarto::quarto_render(
-    input = file.path(intermediateDir, 'protocol', "assure_study_protocol.qmd"), 
+    input = file.path(intermediateDir, 'protocol', "study_protocol.qmd"), 
     #output_file = outputName,
     execute_params = list(
       jsonLocation = jsonLocation,
@@ -142,7 +142,7 @@ generateProtocol <- function(
     dir.create(outputLocation, recursive = T)
   }
   file.copy(
-    from = file.path(intermediateDir, 'protocol', 'assure_study_protocol.html'), 
+    from = file.path(intermediateDir, 'protocol', 'study_protocol.html'), 
     to = file.path(outputLocation, outputName)
       )
   
