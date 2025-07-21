@@ -1,5 +1,5 @@
 ---
-title: "ASSURE Study Protocol"
+title: "Study Protocol"
 date: today
 date-format: short
 title-block-banner: true
