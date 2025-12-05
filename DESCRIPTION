@@ -36,5 +36,10 @@ Suggests:
   rmarkdown,
   SelfControlledCaseSeries,
   testthat
+Remotes:
+  ohdsi/ROhdsiWebApi,
+  ohdsi/CohortIncidence,
+  ohdsi/CohortMethod,
+  ohdsi/SelfControlledCaseSeries
 RoxygenNote: 7.3.2
 Encoding: UTF-8
