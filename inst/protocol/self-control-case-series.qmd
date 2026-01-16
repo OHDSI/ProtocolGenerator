@@ -6,12 +6,41 @@ output: html_document
 
 package <- "SelfControlledCaseSeries"
 
+# check using old or new SCCS setting
+if('sccsAnalysesSpecifications' %in% names(SelfControlledCaseSeriesModuleSettings$settings)){
+  
+  # check packageVersion >= 6.0.0 and warn if < 6.0.0
+  if(utils::compareVersion(
+  a = as.character(utils::packageVersion("SelfControlledCaseSeries")),
+  b = "6.0.0"
+  ) == -1){
+    warning('Installed SelfControlledCaseSeries is less than version 6 but json created using package version 6 or higher.')
+  }
+  
+  # set exposuresOutcomeList
+  sccsSettings <- SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysesSpecifications
+
+} else{
+  
+    # check packageVersion < 6.0.0 and warn if >= 6.0.0
+  if(utils::compareVersion(
+  a = as.character(utils::packageVersion("SelfControlledCaseSeries")),
+  b = "6.0.0"
+  ) == 0){
+    warning('Installed SelfControlledCaseSeries is version 6 or more but json created using package less than version 6.')
+  }
+  
+  # set exposuresOutcomeList
+  sccsSettings <- SelfControlledCaseSeriesModuleSettings$settings
+
+}
+
 eo <- do.call(
   what = rbind,
   args = lapply(
-  X = 1:length(SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList),
+  X = 1:length(sccsSettings$exposuresOutcomeList),
   FUN = function(k){
-    x <- SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList[[k]]
+    x <- sccsSettings$exposuresOutcomeList[[k]]
     data.frame(
       setting = ifelse(is.null(x$jsonId), 1, x$jsonId), #k,
       outcomeId = rep(x$outcomeId, length(x$exposures)),
@@ -32,9 +61,9 @@ if(is.null(negativeControls)){
 neg <- do.call(
   what = rbind,
   args = lapply(
-    X = 1:length(SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList),
+    X = 1:length(sccsSettings$exposuresOutcomeList),
     FUN = function(k){
-      x <- SelfControlledCaseSeriesModuleSettings$settings$exposuresOutcomeList[[k]]
+      x <- sccsSettings$exposuresOutcomeList[[k]]
       data.frame(
         cohortId = rep(x$outcomeId, length(x$exposures)),
         outcomeConceptId = rep(x$outcomeId, length(x$exposures)),
@@ -153,7 +182,7 @@ The design requires the user to specify the target population of interest, an op
 
 In this specification there are ``r length(unique(eoOfInt$parentIdTarget))`` unique parent exposure cohorts (``r nrow(unique(eoOfInt[, c('exposureId', 'nestingId')]))`` unique exposure and indications combinations), see @sec-sccs-eo.  There is a total of ``r length(unique(eoOfInt$nestingId))`` unique indications.  A total of ``r length(unique(eoOfInt$parentIdOutcome))`` parent outcome cohorts (``r length(unique(eoOfInt$outcomeId))`` unique outcomes with subsets).
 
-In total there are ``r length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)`` different self controlled case series analysis designs (see @sec-sccs-analysis).
+In total there are ``r length(sccsSettings$sccsAnalysisList)`` different self controlled case series analysis designs (see @sec-sccs-analysis).
 
 
 ### Exposure Indication Outcomes {#sec-sccs-eo}
@@ -305,9 +334,9 @@ cat('\n\n')
 ```{r sccs_analyses, echo=FALSE, results = 'asis'}
 
 
-for(i in 1:length(SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList)){
+for(i in 1:length(sccsSettings$sccsAnalysisList)){
   
-  analysisSetting <- SelfControlledCaseSeriesModuleSettings$settings$sccsAnalysisList[[i]]
+  analysisSetting <- sccsSettings$sccsAnalysisList[[i]]
     
   cat(
     paste0('#### Analysis ', analysisSetting$analysisId,': ', analysisSetting$description, ' \n'), 
@@ -475,9 +504,8 @@ settingDf <- getSettingsTable(
 
 ```{r sccs_diagnostics, echo=FALSE, results = 'asis'}
 
-
-if('sccsDiagnosticThresholds' %in% names(SelfControlledCaseSeriesModuleSettings$settings)){
- diagSetting <- SelfControlledCaseSeriesModuleSettings$settings$sccsDiagnosticThresholds
+if('sccsDiagnosticThresholds' %in% names(sccsSettings)){
+ diagSetting <- sccsSettings$sccsDiagnosticThresholds
  
   diagSettings <- getSettingsTable(
     package = package,
