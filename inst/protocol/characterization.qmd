@@ -4,418 +4,340 @@ output: html_document
 
 ```{r, echo=FALSE, results = 'asis', include=FALSE}
 
-aggSpec <- CharacterizationModuleSettings$settings$analysis$aggregateCovariateSettings
+# get the settings - each results a data.frame: tableData and a settings json list: settingsJson
 
-caSettings <- lapply(aggSpec, function(x) list(
-  covariateSettings = x$covariateSettings,
-  caseCovariateSettings = x$caseCovariateSettings, 
-  casePreTargetDuration = x$casePreTargetDuration,
-  casePostOutcomeDuration = x$casePostOutcomeDuration,
-  extractNonCaseCovariates = x$extractNonCaseCovariates
-  ))
-caSettingsUnique <- unique(caSettings)
-numSettings <- length(caSettingsUnique)
+globalSetings <- ProtocolGenerator:::globalCharacterizationSettings(
+  CharacterizationModuleSettings = CharacterizationModuleSettings
+)
+targetBaseline <- ProtocolGenerator:::processTargetBaseineSettings(
+  CharacterizationModuleSettings = CharacterizationModuleSettings,
+  cohortDefinitionDf = cohortDefinitionDf
+  )
+riskFactor <- ProtocolGenerator:::processRiskFactorSettings(
+  CharacterizationModuleSettings = CharacterizationModuleSettings,
+  cohortDefinitionDf = cohortDefinitionDf
+  )
+caseSeries <- ProtocolGenerator:::processCaseSeriesSettings(
+  CharacterizationModuleSettings = CharacterizationModuleSettings,
+  cohortDefinitionDf = cohortDefinitionDf
+  )
 
-tSets <- lapply(aggSpec, function(x) data.frame(
-targetId = x$targetIds, 
-minPriorObservation = x$minPriorObservation
-))
-tSetsUnique <- unique(tSets)
+# summary detaisls
+numTbSettings <- length(targetBaseline$settingsJson)
+numRfSettings <- length(riskFactor$settingsJson)
+numCsSettings <- length(caseSeries$settingsJson)
+countTbParents <- length(unique(targetBaseline$tableData$parentId))
+countRfParents <- length(unique(riskFactor$targetData$parentIdTarget))
+countCsParents <- length(unique(caseSeries$targetData$parentIdTarget))
+countTbTarget <- length(unique(targetBaseline$tableData$targetId))
+countRfTarget <- length(unique(riskFactor$targetData$targetId))
+countCsTarget <- length(unique(caseSeries$targetData$targetId))
 
-settingIdentifier <- rep(0, length(tSets))
-for(setInd in 1:length(tSetsUnique)){
-  settingIdentifier[which(unlist(lapply(tSets, function(x) identical(x, tSetsUnique[[setInd]]))))] <- setInd
-}
+countRfOutcomeParents <- length(unique(unlist(lapply(riskFactor$outcomeDataList, function(x) x$parentIdOutcome))))
+countRfOutcome <- length(unique(unlist(lapply(riskFactor$outcomeDataList, function(x) x$outcomeId))))
+countCsOutcomeParents <- length(unique(unlist(lapply(caseSeries$outcomeDataList, function(x) x$parentIdOutcome))))
+countCsOutcome <- length(unique(unlist(lapply(caseSeries$outcomeDataList, function(x) x$outcomeId))))
 
-# if targets are the same - just extract outcomes and plot T table and O table sep 
-# else plot combined table
-if(length(tSetsUnique) == 1){
-  sepT <- TRUE
-  
-  # create target table
-tempDf <- cohortDefintionDf
-colnames(tempDf) <- paste0(colnames(tempDf), 'Target')
-targetDf <- merge(tSetsUnique[[1]], tempDf, by.x = 'targetId', by.y = 'cohortIdTarget')
-targetDf$setting <- paste0("<a href ='#sec-char-setting-1'>Setting 1</a>")
-
-# order the columns
-targetDf <- targetDf %>% 
-  dplyr::relocate("cohortNameTarget") %>% 
-  dplyr::relocate("parentNameTarget") %>% 
-  dplyr::relocate("minPriorObservation", .after = "cohortNameTarget") %>%
-  dplyr::relocate("setting", .after = dplyr::last_col())
-
-  countParents <- length(unique(targetDf$parentIdTarget))
-  countTarget <- length(unique(targetDf$targetId))
-
-# create the outcome table
-  caAllDf <- do.call('rbind', lapply(
-  aggSpec, function(x){
-    res <- data.frame(
-      outcomeId = x$outcomeIds
-    )
-    res$outcomeWashoutDays <- x$outcomeWashoutDays 
-    res$tar <- paste0('(',
-             x$startAnchor, '+', x$riskWindowStart, 
-             ')-(',
-             x$endAnchor, '+', x$riskWindowEnd
-             ,')')
-     return(res) 
-  }
-)) 
-caAllDf <- unique(caAllDf)
-tempDf <- cohortDefintionDf
-colnames(tempDf) <- paste0(colnames(tempDf), 'Outcome')
-caAllDf <- merge(caAllDf, tempDf, by.x = 'outcomeId', by.y = 'cohortIdOutcome')
-
-groupByOutcomes <- c('parentNameOutcome')
-
-caAllDf <- caAllDf %>% 
-  dplyr::relocate("cohortNameOutcome") %>% 
-  dplyr::relocate("parentNameOutcome") %>%
-  dplyr::relocate("outcomeWashoutDays", .after = "cohortNameOutcome") %>%
-  dplyr::relocate("tar", .after = "outcomeWashoutDays") 
-
-} else{
-  sepT <- FALSE
-# get targetIds,minPriorObservation, outcomeIds,outcomeWashoutDays,  
-#.  tar: riskWindowStart, startAnchor, riskWindowEnd, endAnchor
-  
-caAllDf <- do.call('rbind', lapply(
-  1:length(aggSpec), function(ind){
-    x <- aggSpec[[ind]]
-    res <- expand.grid(
-      targetId = x$targetIds, 
-      outcomeId = x$outcomeIds
-    )
-    
-    res$minPriorObservation <- x$minPriorObservation
-    res$outcomeWashoutDays <- x$outcomeWashoutDays 
-    res$tar <- paste0('(',
-             x$startAnchor, '+', x$riskWindowStart, 
-             ')-(',
-             x$endAnchor, '+', x$riskWindowEnd
-             ,')')
-    res$setting <- paste0("<a href ='#sec-char-setting-",settingIdentifier[ind],"'>Setting ",settingIdentifier[ind],"</a>")
-     return(res) 
-  }
-))
-caAllDf <- unique(caAllDf)
-
-# now add target and outcome names and details
-tempDf <- cohortDefintionDf
-colnames(tempDf) <- paste0(colnames(tempDf), 'Target')
-caAllDf <- merge(caAllDf, tempDf, by.x = 'targetId', by.y = 'cohortIdTarget')
-tempDf <- cohortDefintionDf
-colnames(tempDf) <- paste0(colnames(tempDf), 'Outcome')
-caAllDf <- merge(caAllDf, tempDf, by.x = 'outcomeId', by.y = 'cohortIdOutcome')  %>%
-      dplyr::arrange(.data$parentNameTarget,.data$cohortNameTarget)
-
-groupByOutcomes <- c('parentNameTarget', 'parentNameOutcome')
-
-caAllDf <- caAllDf %>% 
-  dplyr::relocate("cohortNameTarget") %>% 
-  dplyr::relocate("parentNameTarget") %>% 
-  dplyr::relocate("cohortNameOutcome", .after = "cohortNameTarget") %>%
-  dplyr::relocate("minPriorObservation", .after = "cohortNameTarget") %>%
-  dplyr::relocate("outcomeWashoutDays", .after = "cohortNameOutcome") %>%
-  dplyr::relocate("tar", .after = "outcomeWashoutDays") %>%
-  dplyr::relocate("setting", .after = dplyr::last_col())
-
-  countParents <- length(unique(caAllDf$parentIdTarget))
-  countTarget <- length(unique(caAllDf$targetId))
-
-}
-
-cColumns <- list(
-      subsetIdTarget = reactable::colDef(show = F),
-      subsetIdOutcome = reactable::colDef(show = F),
-      isParentTarget = reactable::colDef(show = F),
-      isParentOutcome = reactable::colDef(show = F),
-      parentIdTarget = reactable::colDef(show = F),
-      parentIdOutcome = reactable::colDef(show = F),
-      subsetNameTarget = reactable::colDef(show = F),
-      subsetNameOutcome = reactable::colDef(show = F),
-      packageVersionTarget = reactable::colDef(show = F),
-      packageVersionOutcome = reactable::colDef(show = F),
-      numberSubsetOperatorsTarget = reactable::colDef(show = F),
-      numberSubsetOperatorsOutcome = reactable::colDef(show = F),
-      
-      subsetId = reactable::colDef(show = F),
-      isParent = reactable::colDef(show = F),
-      parentId = reactable::colDef(show = F),
-      subsetName = reactable::colDef(show = F),
-      packageVersion = reactable::colDef(show = F),
-      numberSubsetOperators = reactable::colDef(show = F),
-      
-      cohortIdTarget = reactable::colDef(show = F),
-      cohortIdOutcome = reactable::colDef(show = F),
-      targetId = reactable::colDef(show = F),
-      outcomeId  = reactable::colDef(show = F),
-      
-      tar = reactable::colDef(
-        aggregate = "unique",
-        name = 'Time at risk', 
-        filterable = TRUE, 
-        minWidth = 150
-      ),
-      outcomeWashoutDays = reactable::colDef(
-        aggregate = "unique",
-        name = 'Outcome Washout (Days)', 
-        filterable = TRUE
-      ),
-      minPriorObservation = reactable::colDef(
-        aggregate = "unique",
-        name = 'Prior Obs (days)', 
-        filterable = TRUE
-      ),
-      parentName = reactable::colDef(
-        name = 'Parent Cohort', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300, 
-        html = TRUE
-      ),
-      parentNameTarget = reactable::colDef(
-        name = 'Parent Target', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300,
-        html = TRUE
-      ),
-      parentNameOutcome = reactable::colDef(name = 'Parent Outcome', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300,
-        html = TRUE
-        ),
-      
-      cohortNameTarget = reactable::colDef(
-        aggregate = "unique",
-        show = TRUE,
-        name = 'Target', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300
-        ),
-      cohortNameWithLinkTarget = reactable::colDef(
-        show = FALSE,
-        name = 'Cohort', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300,
-        html = TRUE
-      ),
-      cohortNameOutcome = reactable::colDef(
-        show = TRUE,
-        aggregate = "unique",
-        name = 'Outcome', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300
-        ),
-      cohortNameWithLinkOutcome = reactable::colDef(
-        show = FALSE,
-        name = 'Outcome', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300,
-        html = TRUE
-      ),
-      cohortNameWithLink = reactable::colDef(
-        show = FALSE,
-        name = 'Cohort', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300,
-        html = TRUE
-      ),
-      
-      cohortName = reactable::colDef(
-        show = TRUE,
-        aggregate = "unique",
-        name = 'Cohort', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300
-        ),
-      cohortId = reactable::colDef(show = F),
-      
-      subsetCohortsTarget = reactable::colDef(
-        html = TRUE,
-        aggregate = "count"
-        ),
-      subsetCohorts = reactable::colDef(
-        html = TRUE,
-        aggregate = "count"
-        ),
-      subsetCohortsOutcome = reactable::colDef(
-        html = TRUE,
-        aggregate = "count"
-        ),
-      
-      appliedSubsetsTarget = reactable::colDef(
-        html = TRUE,
-        aggregate = "count"
-        ),
-      appliedSubsetsOutcome= reactable::colDef(show = FALSE),
-      appliedSubsets = reactable::colDef(
-        html = TRUE,
-        aggregate = "count"
-        ),
-      
-      setting = reactable::colDef(
-        html = TRUE,
-        aggregate = "count"
-        )
-    )
-
+cColumns <- ProtocolGenerator:::characterizationColDef()
 
 ```
 
 ## Characterization
 
-### Aggregate Covariates
+::: {.callout-important collapse="false"}
+# Global settings
+```{r, echo=FALSE, results = 'asis'}
+cat('\n')
+cat(globalSetings)
+cat('\n')
+```
+:::
 
-Aggregate covariates analysis executes three different types of characterization:
+### Target baseline characterization 
+::: {.callout-important collapse="false"}
+# Summary of target baseline
+Aggregate baseline covariate summaries are computed for each specified target population—defined as the first exposure of a target cohort within `limitToFirstInNDays` days and with at least `minPriorObservation` days of prior observation. For each covariate we report sample size, means and standard deviations (or medians and IQRs, where appropriate) for continuous variables, and counts and proportions for categorical/binary variables.
 
-**1. Target with and without outcome during TAR characterization**
+The analysis is performed across ``r countTbParents `` unique parent targets (``r countTbTarget `` unique target subsets) see @sec-char-tb-targets. There are ``r numTbSettings`` unique covariate settings @sec-char-tb-settings.
+:::
 
-Differences in covariate mean values between the target population with the outcome during a time-at-risk (TAR) and the target population without the outcome during TAR will be run for all combinations or targets population, outcomes and TAR specified in the settings.  The results return the mean covariate value (for binary covariates this corresponds to the frequency of the covariate) for patients in the target population, for patients with the outcome, for patients in the target population with the outcome during the TAR and for patients in the target population without the outcome during the TAR.  The standardized mean difference (mean in group 1 - mean in group 2) divided by the standard deviation is calculated for the target population with the outcome and the target population without the outcome during TAR as this shows covariates that are associated to having the outcome during TAR (risk factors).
+```{r, echo=FALSE, results = 'asis'}
+
+if(!is.null(targetBaseline)){
+  
+cat("#### Targets {#sec-char-tb-targets}\n\n")
+
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Targets used in target baseline\n')
+  print(shiny::tagList(
+   ProtocolGenerator::reportTableFormat(
+    table = targetBaseline$tableData, 
+    groupBy = 'parentNameTarget', 
+    elementId = 'tb-targets',
+    groupByButton = TRUE,
+    columns = cColumns[names(cColumns) %in% colnames(targetBaseline$tableData)]
+    )))
+  cat('\n:::\n')
+  
+  tbTargets <- unique(targetBaseline$tableData$targetId)
+
+cat('\n')
+cat('\n#### Settings {#sec-char-tb-settings}\n\n')
+
+for(settingInd in 1:length(targetBaseline$settingsJson)){
+# Global settings
+  cat(paste0('\n\n##### Settings ', settingInd, '{#sec-char-tb-setting-',settingInd,'}'))
+  cat('\n\n')
+  
+ tbSettings <- ParallelLogger::convertJsonToSettings(targetBaseline$settingsJson[[settingInd]])
+ covariateDetails <- formatCovariateSettings(tbSettings)
+
+ cat('\n::: {.callout-important collapse="true"}')
+ cat('\n# Covariate settings used\n')
+  print(shiny::tagList(reportTableFormat(
+    table = covariateDetails, 
+    groupBy = 'input', 
+    columns = defaultColumns(covariateDetails)
+    )))
+  cat('\n:::\n')
+  
+}
+} else{
+  cat('\nNo settings for target baseline in this analysis\n\n')
+}
+```
+
+
+### Risk Factor
+::: {.callout-important collapse="false"}
+# Summary of risk factor
+For every specified combination of target population, outcome, and time-at-risk (TAR), we will compare covariate mean values between patients in the target population who experience the outcome during the TAR and those who do not. For each covariate we report:
+
+- Mean value among target-population patients with the outcome during TAR (for binary covariates this equals prevalence).
+- Mean value among target-population patients without the outcome during TAR.
+
+We quantify association with the outcome during TAR using the standardized mean difference (SMD) between the target-population with the outcome and target-population without the outcome groups. The SMD is calculated as:
+
+$$
+SMD = \frac{\bar{x}_1 - \bar{x}_2}{s_{pooled}}
+$$
+where $\bar{x}_1$ is the mean among target-population patients with the outcome during TAR, $\bar{x}_2$ is the mean among target-population patients without the outcome during TAR and $s_{pooled}$ is the pooled standard deviation. Large absolute SMDs highlight covariates that are potential risk factors for the outcome during the TAR.  Users can specify a min absolute SMD and only covariates with an absolute SMD greater or equal to this value are returned by the analysis.
 
 For more details see [here](https://ohdsi.github.io/Characterization/articles/Specification.html#risk-factor-analysis) for risk factor analysis and [here](https://ohdsi.github.io/Characterization/articles/Specification.html#aggregate-covariates) for the mean covariate analysis for the target and outcome cohorts.
 
+The analysis is performed across ``r countRfParents `` unique parent targets (``r countRfTarget `` unique target subsets) see @sec-char-rf-targets,  ``r countRfOutcomeParents `` unique parent outcomes (``r countRfOutcome`` outcome subsets) see @sec-char-rf-outcomes. There are ``r numRfSettings`` unique analysis settings @sec-char-rf-settings. 
 
-**2. Case series**
-Aggregate covariate details are calculated for the cases (target population with the outcome during a time-at-risk) at three different time points: 
+:::
 
-1) before target index (before)
-2) between target index and first outcome date after target index (during)
-3) After first outcome date after target index (after)
-
-This can show how the patients with the outcome change over time.
-
-**3. Target and outcome characterization **
-Aggregate covariate details are calculated for the target population (first exposure with min prior observation) and the outcome cohort (first occurrence with min prior observation).
-
-
-There are ``r numSettings`` unique analysis settings @sec-char-settings ,  ``r countParents `` unique parent targets (``r countTarget `` unique target subsets) see @sec-char-targets ,  ``r length(unique(caAllDf$parentIdOutcome)) `` unique parent outcomes (``r length(unique(caAllDf$outcomeId))`` outcome subsets) see @sec-char-outcomes . 
 
 ```{r, echo=FALSE, results = 'asis'}
 
-cat("#### Combinations \n")
+if(!is.null(riskFactor)){
 
-if(sepT){
-  cat("##### Targets {#sec-char-targets}\n\n")
+cat("#### Targets {#sec-char-rf-targets}\n\n")
+cat('\n::: {.callout-important collapse="true"}')
+cat('\n# Targets used in risk factors\n')
   print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = targetDf, 
-    groupBy = c('parentNameTarget', 'cohortNameTarget'), 
-    columns = cColumns[names(cColumns) %in% colnames(targetDf)]
+    table = riskFactor$targetData, 
+    groupBy = 'parentNameTarget', 
+    elementId = 'rf-targets',
+    groupByButton = TRUE,
+    columns = cColumns[names(cColumns) %in% colnames(riskFactor$targetData)]
     )))
+  cat('\n:::\n')
   
-  aggregateTargets <- unique(targetDf$targetId)
-  aggregateOutcomes <- unique(caAllDf$outcomeId)
-  
-  cat('\n\n')
-  cat("##### Outcomes {#sec-char-outcomes}\n")
-} else{
-  cat("##### Target and Outcomes {#sec-char-targets}{#char-outcomes}\n")
-  
-  # tracker
-  aggregateTargets <- unique(caAllDf$targetId)
-  aggregateOutcomes <- unique(caAllDf$outcomeId)
-  
-}
-
-    if(nrow(caAllDf)>0){ 
- print(shiny::tagList(
+cat("#### Outcomes {#sec-char-rf-outcomes}\n\n")
+for(rfoInd in 1:length(riskFactor$outcomeDataList)){
+  outcomeData <- riskFactor$outcomeDataList[[rfoInd]]
+  cat(paste0("\n\n##### Outcome {#sec-char-rf-outcome-",rfoInd,"}\n\n"))
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Outcomes used in risk factors\n')
+  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = caAllDf, #TODO: move columns around
-    groupBy = groupByOutcomes, 
-    columns = cColumns[names(cColumns) %in% colnames(caAllDf)]
+    table = outcomeData, 
+    groupBy = 'parentNameOutcome', 
+    elementId = 'rf-outcomes',
+    groupByButton = TRUE,
+    columns = cColumns[names(cColumns) %in% colnames(outcomeData)]
     )))
-   cat('\n\n')
-  }
-
-```
-
-#### Settings {#sec-char-settings}
-
-```{r, echo=FALSE, results = 'asis'}
-
-for(cfInd in 1:length(caSettingsUnique)){
+  cat('\n:::\n')
+}
   
-  cat(paste0('\n\n##### Settings ', cfInd, '{#sec-char-setting-',cfInd,'}'))
   cat('\n\n')
-  
-  # are these relevant?
-extraSettings <- data.frame(
-  input = c('casePreTargetDuration','casePostOutcomeDuration','extractNonCaseCovariates'),
-  level2 = c(' ',' ',' '),
-  desc = c('How many days prior to target index to start the covariate lookback for the case series analysis.','How many days post outcome index to end the covariate lookback for the case series analysis.','Whether to extract the target and outcome aggregate covariates.'),
-  value = c(caSettingsUnique[[cfInd]]$casePreTargetDuration, caSettingsUnique[[cfInd]]$casePostOutcomeDuration, caSettingsUnique[[cfInd]]$extractNonCaseCovariates),
-  bold = rep('TRUE', 3)
-)
+  cat("#### Settings {#sec-char-rf-settings} \n")
 
-covariates <- caSettingsUnique[[cfInd]]$covariateSettings
+
+for(settingInd in 1:length(riskFactor$settingsJson)){
+  
+  cat(paste0('\n\n##### Settings ', settingInd, '{#sec-char-rf-setting-',settingInd,'}'))
+  cat('\n\n')
+    cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Settings used in risk factors\n')
+  
+covariates <- ParallelLogger::convertJsonToSettings(riskFactor$settingsJson[[settingInd]])
 covariateDetails <- formatCovariateSettings(covariates)
 
   print(shiny::tagList(reportTableFormat(
-    table = rbind(covariateDetails, extraSettings), 
+    table = covariateDetails, 
     groupBy = 'input', 
-    columns = defaultColumns(rbind(covariateDetails, extraSettings))
-    #caption = paste('covariate setting ', i)
+    columns = defaultColumns(covariateDetails)
     )))
+  cat('\n:::\n')
   
+}
+}  else{
+  cat('\nNo settings for risk factor in this analysis\n\n')
 }
 ```
 
-### Time-to-event
-```{r, echo=FALSE, results = 'asis', include=FALSE}
-cTargets <- cohortDefintionDf[cohortDefintionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$timeToEventSettings[[1]]$targetIds, ]
-cOutcomes <- cohortDefintionDf[cohortDefintionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$timeToEventSettings[[1]]$outcomeIds, ]
+
+### Case series
+
+::: {.callout-important collapse="false"}
+# Summary of case series
+For each case (a patient in the target population who experiences the outcome during the specified time-at-risk), we compute aggregate covariate summaries at three different time points: 
+
+- **Before**: on or prior to the target index (baseline).
+- **During**: between target index and first outcome index during the time-at-risk- this includes the outcome index date.
+- **After**: after first outcome index during the time-at-risk
+
+For each covariate and time window we report sample size and appropriate summary statistics — means and standard deviations (or medians and IQRs) for continuous variables, and counts and proportions for categorical/binary variables. Comparing these summaries across the three windows highlights how case characteristics evolve before, during, and after the outcome.
+
+The analysis is performed across ``r countCsParents `` unique parent targets (``r countCsTarget `` unique target subsets) see @sec-char-cs-targets,  ``r countRfOutcomeParents `` unique parent outcomes (``r countCsOutcome`` outcome subsets) see @sec-char-cs-outcomes. There are ``r numCsSettings`` unique analysis settings @sec-char-cs-settings. 
+
+:::
+
+
+```{r, echo=FALSE, results = 'asis'}
+
+if(!is.null(caseSeries)){
+  
+cat("#### Targets {#sec-char-cs-targets}\n\n")
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Targets used in case series\n')
+  print(shiny::tagList(
+   ProtocolGenerator::reportTableFormat(
+    table = caseSeries$targetData, 
+    groupBy = 'parentNameTarget',
+    elementId = 'cs-targets',
+    groupByButton = TRUE,
+    columns = cColumns[names(cColumns) %in% colnames(caseSeries$targetData)]
+    )))
+  cat('\n:::\n')
+  
+cat("#### Outcomes {#sec-char-cs-outcomes}\n\n")
+for(rfoInd in 1:length(caseSeries$outcomeDataList)){
+  outcomeData <- caseSeries$outcomeDataList[[rfoInd]]
+  cat(paste0("\n\n##### Outcome {#sec-char-cs-outcome-",rfoInd,"}\n\n"))
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Outcomes used in case series\n')
+  print(shiny::tagList(
+   ProtocolGenerator::reportTableFormat(
+    table = outcomeData, 
+    groupBy = 'parentNameOutcome', 
+    elementId = 'cs-outcomes',
+    groupByButton = TRUE,
+    columns = cColumns[names(cColumns) %in% colnames(outcomeData)]
+    )))
+  cat('\n:::\n')
+}
+
+  cat('\n\n')
+  cat("#### Settings {#sec-char-cs-settings} \n")
+
+
+for(settingInd in 1:length(caseSeries$settingsJson)){
+  
+  cat(paste0('\n\n##### Settings ', settingInd, '{#sec-char-cs-setting-',settingInd,'}'))
+  cat('\n\n')
+  
+csSettings <- ParallelLogger::convertJsonToSettings(caseSeries$settingsJson[[settingInd]])
+
+covariateDetails <- formatCovariateSettings(csSettings$caseCovariateSettings)
+extraSettings <- data.frame(
+  input = c('casePreTargetDuration','casePostOutcomeDuration'),
+  level2 = c(' ',' '),
+  desc = c('How many days prior to target index to start the covariate lookback for the case series analysis.','How many days post outcome index to end the covariate lookback for the case series analysis.'),
+  value = c(csSettings$casePreTargetDuration, csSettings$casePostOutcomeDuration),
+  bold = rep('TRUE', 2)
+)
+
+cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Settings used in case series\n')
+  print(shiny::tagList(reportTableFormat(
+    table = rbind(covariateDetails,extraSettings), 
+    groupBy = 'input', 
+    columns = defaultColumns(rbind(covariateDetails, extraSettings))
+    )))
+  cat('\n:::\n')
+  
+}
+} else{
+  cat('\nNo settings for case series in this analysis\n\n')
+}
 ```
 
-This analysis that lets you view the timing of the outcomes relative to the target eras are calculated for all Targets and Outcomes.  For each target cohort and outcome, this analysis finds all occurrences of the outcome occurring within patients in the target cohort.  For each occurrence the time in days between the outcome date and the target index date is calculated (negative values mean the outcome occurred before the target index and positive values mean the outcome occurred after the target index).  Each occurrence is given labels corresponding to whether the outcome was the first ever for the patient or not, whether the outcome occurrence was before the target index, during the first target exposure, during a subsequent target exposure, between target exposures or after last target exposure.  The outcome occurrence timing and categories are aggregated across the target population. See more [here](https://ohdsi.github.io/Characterization/articles/Specification.html#time-to-event).    
+
+
+### Time-to-event
+::: {.callout-important collapse="false"}
+# Summary of time-to-event
+
+```{r, echo=FALSE, results = 'asis', include=FALSE}
+cTargets <- cohortDefinitionDf[cohortDefinitionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$timeToEventSettings[[1]]$targetIds, ]
+cOutcomes <- cohortDefinitionDf[cohortDefinitionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$timeToEventSettings[[1]]$outcomeIds, ]
+```
+
+For each specified target cohort and outcome, we identify all outcome occurrences among cohort members and compute the days from the target index to each occurrence (negative = before index, positive = after index). Each occurrence is labeled by:
+
+- whether it is the patient’s first-ever outcome
+- its timing relative to target exposures: before index, during the first target exposure, during a subsequent target exposure, between target exposures, or after the last target exposure.
+
+We then aggregate occurrence counts by day relative to the index and by label, producing daily frequency tables (and optional plots) that show when outcomes occur across the target population and how timing differs by occurrence type. See more [here](https://ohdsi.github.io/Characterization/articles/Specification.html#time-to-event).    
 
 In this specified analysis there are ``r length(unique(cTargets$parentId))`` unique parent targets (corresponding to ``r length(unique(cTargets$cohortId))`` unique targets with subsets) see @sec-char-tte-targets and  ``r length(unique(cOutcomes$parentId)) `` unique parent outcomes (corresponding to ``r length(unique(cOutcomes$cohortId))`` unique outcomes with subsets) see @sec-char-tte-outcomes. 
+
+:::
 
 ```{r, echo=FALSE, results = 'asis'}
 
   
   cat("\n\n#### Targets {#sec-char-tte-targets} \n")    
 if(nrow(cTargets)>0){ 
+  
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Targets used in time-to-event\n')
+  
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
     table = cTargets %>%
       dplyr::arrange(.data$parentName,.data$cohortName), 
     groupBy = 'parentName', 
+    elementId = 'tte-targets',
+    groupByButton = TRUE,
     columns = cColumns[names(cColumns) %in% colnames(cTargets)], 
     caption = 'Target cohorts included in the analysis.'
     )))
+  cat('\n:::\n')
    cat('\n\n')
   }
   
   cat("\n\n#### Outcomes {#sec-char-tte-outcomes} \n")
       if(nrow(cOutcomes)>0){ 
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Outcomes used in time-to-event\n')
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
     table = cOutcomes %>%
       dplyr::arrange(.data$parentName,.data$cohortName), 
     groupBy = 'parentName', 
+    elementId = 'tte-outcomes',
+    groupByButton = TRUE,
     columns = cColumns[names(cColumns) %in% colnames(cOutcomes)], 
     caption = 'Outcome cohorts included in the analysis.'
     )))
+ cat('\n:::\n')
    cat('\n\n')
       }
 
@@ -426,9 +348,12 @@ tteOutcomes <-  unique(cOutcomes$cohortId)
 
 
 ### Dechallenge Rechallenge
+
+::: {.callout-important collapse="false"}
+# Summary of dechallenge rechallenge
 ```{r, echo=FALSE, results = 'asis', include=FALSE}
-cTargets <- cohortDefintionDf[cohortDefintionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$targetCohortDefinitionIds, ]
-cOutcomes <- cohortDefintionDf[cohortDefintionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$outcomeCohortDefinitionIds, ]
+cTargets <- cohortDefinitionDf[cohortDefinitionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$targetCohortDefinitionIds, ]
+cOutcomes <- cohortDefinitionDf[cohortDefinitionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$outcomeCohortDefinitionIds, ]
 ```
 
 This analysis lets you identify cases where a patient had an outcome while exposed to a target drug and the target drug is stopped shortly after the outcome (this may correspond to patients stopping the drug due to the outcome starting). This is known as dechallenge.  If the outcome stops after the drug stops then this is a dechallenge success, otherwise, if the outcome continues it is a dechallenge fail.  For the cases where there was a dechallenge, we are then interested in how often the patient restarts the drug at a later time, rechallenges, and whether the outcome occurs shortly after starting exposure (rechallenge success) or does not occur (rechallenge fail). See more [here](https://ohdsi.github.io/Characterization/articles/Specification.html#dechallenge-rechallenge). 
@@ -437,32 +362,43 @@ For each Target and Outcome combination this calculates the number of patients i
 
 In this analysis there are ``r length(unique(cTargets$parentId)) `` unique parent targets (corresponding to ``r length(unique(cTargets$cohortId))`` unique targets with subsets) see @sec-char-dr-targets and  ``r length(unique(cOutcomes$parentId)) `` unique parent outcomes (corresponding to ``r length(unique(cOutcomes$cohortId))`` unique outcomes with subsets) see @sec-char-dr-outcomes. The settings (decallengeStopInterval and dechallengeEvaluationWindow) are in @sec-dcrc-settings.
 
+:::
 
 ```{r, echo=FALSE, results = 'asis'}
   
   cat("\n\n#### Targets {#sec-char-dr-targets} \n\n")
   if(nrow(cTargets)>0){ 
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Targets used in dechallenge rechallenge\n')
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
     table = cTargets %>%
       dplyr::arrange(.data$parentName,.data$cohortName), 
     groupBy = 'parentName', 
+    elementId = 'dcrc-targets',
+    groupByButton = TRUE,
     columns = cColumns[names(cColumns) %in% colnames(cTargets)], 
     caption = 'Target cohorts included in the analysis.'
     )))
+   cat('\n:::\n')
    cat('\n\n')
   }
 
   cat("\n#### Outcomes {#sec-char-dr-outcomes} \n")
         if(nrow(cOutcomes)>0){ 
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Outcomes used in dechallenge rechallenge \n')
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
     table = cOutcomes %>%
       dplyr::arrange(.data$parentName,.data$cohortName), 
     groupBy = 'parentName', 
+    elementId = 'dcrc-outcomes',
+    groupByButton = TRUE,
     columns = cColumns[names(cColumns) %in% colnames(cOutcomes)], 
     caption = 'Outcome cohorts included in the analysis.'
     )))
+   cat('\n:::\n')
    cat('\n\n')
       }
   
@@ -477,6 +413,8 @@ setTable <- getSettingsTable(
   )
 )
 
+  cat('\n::: {.callout-important collapse="true"}')
+  cat('\n# Parameters for dechallenge rechallange \n')
     print(shiny::tagList(reportTableFormat(
       table = setTable, 
       #groupBy = 'input',
@@ -489,6 +427,7 @@ setTable <- getSettingsTable(
                      )),
       caption = 'Parameters for dechallenge rechallange'
     )))
+    cat('\n:::\n')
     
 
 ```
@@ -500,18 +439,48 @@ setTable <- getSettingsTable(
 # code to get the targets and outcomes for c
 # and add to the cohortTracker
 
+if(length(unique(targetBaseline$tableData$targetId)) >0){
 cohortTracker <- rbind(
   cohortTracker,
   data.frame(
   type = c(
-    rep('cTarget', length(unique(aggregateTargets))),
-    rep('cOutcome', length(unique(aggregateOutcomes)))
+    rep('tbTarget', length(unique(targetBaseline$tableData$targetId)))
     ),
-  cohortId = c(unique(aggregateTargets), unique(aggregateOutcomes)),
+  cohortId = c(unique(targetBaseline$tableData$targetId)),
   value = 1
   )
 )
+}
 
+if(length(unique(riskFactor$targetData$targetId)) > 0){
+cohortTracker <- rbind(
+  cohortTracker,
+  data.frame(
+  type = c(
+    rep('rfTarget', length(unique(riskFactor$targetData$targetId))),
+    rep('rfOutcome', length(unique(unlist(lapply(riskFactor$outcomeDataList, function(x) x$outcomeId)))))
+    ),
+  cohortId = c(unique(riskFactor$targetData$targetId), unique(unlist(lapply(riskFactor$outcomeDataList, function(x) x$outcomeId)))),
+  value = 1
+  )
+)
+}
+
+if(length(unique(caseSeries$targetData$targetId)) > 0){
+cohortTracker <- rbind(
+  cohortTracker,
+  data.frame(
+  type = c(
+    rep('csTarget', length(unique(caseSeries$targetData$targetId))),
+    rep('csOutcome', length(unique(unlist(lapply(caseSeries$outcomeDataList, function(x) x$outcomeId)))))
+    ),
+  cohortId = c(unique(caseSeries$targetData$targetId), unique(unlist(lapply(caseSeries$outcomeDataList, function(x) x$outcomeId)))),
+  value = 1
+  )
+)
+}
+
+if(length(unique(tteTargets)) > 0){
 cohortTracker <- rbind(
   cohortTracker,
   data.frame(
@@ -523,7 +492,9 @@ cohortTracker <- rbind(
   value = 1
   )
 )
+}
 
+if(length(unique(cTargets$cohortId)) > 0){
 cohortTracker <- rbind(
   cohortTracker,
   data.frame(
@@ -535,5 +506,5 @@ cohortTracker <- rbind(
   value = 1
   )
 )
-
+}
 ```

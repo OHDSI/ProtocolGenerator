@@ -17,29 +17,27 @@ Depends:
 Imports:
   dplyr,
   jsonlite,
+  ParallelLogger,
   quarto,
   reactable,
   rlang,
   ROhdsiWebApi,
   shiny
 Suggests:
-  Characterization,
-  CohortIncidence,
-  CohortMethod,
+  Characterization (>= 3.0.0),
+  CohortIncidence (>= 4.0.0),
+  CohortMethod (>= 6.0.0),
   Cyclops, 
   keyring,
   knitr,
   markdown,
-  ParallelLogger,
-  PatientLevelPrediction,
+  PatientLevelPrediction (>= 6.6.0),
   remotes,
   rmarkdown,
-  SelfControlledCaseSeries,
+  SelfControlledCaseSeries (>= 6.1.1),
   testthat
 Remotes:
   ohdsi/ROhdsiWebApi,
-  ohdsi/CohortIncidence,
-  ohdsi/CohortMethod,
-  ohdsi/SelfControlledCaseSeries
+  ohdsi/CohortIncidence
 RoxygenNote: 7.3.2
 Encoding: UTF-8

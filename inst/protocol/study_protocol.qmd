@@ -32,130 +32,14 @@ cohortTracker <- c() # this will add cohorts used in the spec
 json <- ParallelLogger::loadSettingsFromJson(params$jsonLocation)
 modulesInJson <- unlist(lapply(json$moduleSpecifications, function(x) x$module))
 
-# need to finish this function below...
+# this function processes the json cohort def to get the cohort details 
 cohortDetails <- ProtocolGenerator::getCohortDefinitionsFromJson(json)
-
 cohortDefinitions <- cohortDetails$cohortDefinitions
-cohortIds <- cohortDetails$cohortIds
-cohortNames <- cohortDetails$cohortNames
-cohortNamesLink <- paste0(cohortNames, ' <a href="#cohort-',cohortIds,'">View</a>')
-#cohortNamesLink <- paste0(cohortNames, ' (@cohort-',cohortIds, ')')
+subsetUnique <- cohortDetails$subsetUnique
+cohortDefinitionDf <- cohortDetails$cohortDefinitionDf
 
-subsetIds <- unlist(lapply(cohortDefinitions, function(x){
-  if(!is.null(x$subsetDefinition)){
-    ParallelLogger::convertJsonToSettings(x$subsetDefinition)$definitionId
-  } else{
-  return(-1)
-}
-}))
+negativeControls <- ProtocolGenerator::getNegativeControlsFromJson(json)
 
-cohortDefintionDf <- data.frame(
-  cohortName = cohortNames,
-  cohortNameWithLink = cohortNamesLink,
-  cohortId = cohortIds,
-  subsetId = subsetIds,
-  isParent = subsetIds == -1,
-  parentId = cohortIds,
-  parentName = cohortNames
-)
-cohortDefintionDf$parentId[!cohortDefintionDf$isParent] <- (cohortDefintionDf$cohortId - cohortDefintionDf$subsetId)[!cohortDefintionDf$isParent]/1000
-cohortDefintionDf$parentName <- sapply(cohortDefintionDf$parentId, function(x){
-  paste0(cohortNames[which(x == cohortIds)], ' <a href="#cohort-',x,'">View</a>')
-  }
-  )
-  
-# =========== SUBSETS ============
-#==================================
-subsetDefs <- cohortDetails$subSetDefs
-if(!is.null(subsetDefs)){
-subsetDefs <- lapply(subsetDefs$json, function(x) ParallelLogger::convertJsonToSettings(x))
-
-subsetOps <- lapply(subsetDefs, function(x){
-  x$subsetOperators
-})
-
-# remove name and extract cohortIds when subsetType == "CohortSubsetOperator"
-subsetUnique <- subsetOps
-subsetUniqueAppend <- list()
-for(sind in 1:length(subsetUnique)){
-  for(sind2 in 1:length(subsetUnique[[sind]])){
-    subsetUnique[[sind]][[sind2]]$name <- NULL 
-    if(subsetUnique[[sind]][[sind2]]$subsetType == 'CohortSubsetOperator'){
-      subsetUnique[[sind]][[sind2]]$cohortIds <- NULL
-    }
-  }
-  subsetUniqueAppend <- append(subsetUniqueAppend,subsetUnique[[sind]])
-}
-subsetUnique <- unique(subsetUniqueAppend)
-
-# now extract into a data.frame and find out which subsets were used
-# get subsetId cohorts 
-
-subsetDetails <- do.call('rbind', lapply(subsetDefs, function(x){
-  data.frame(
-    subsetName = x$name,
-    subsetId = x$definitionId,
-    packageVersion = x$packageVersion,
-    #identifierExpression = x$identifierExpression,
-    #operatorNameConcatString = x$operatorNameConcatString,
-    #subsetCohortNameTemplate = x$subsetCohortNameTemplate,
-    numberSubsetOperators = length(x$subsetOperators)
-  )
-}))
-
-# add CohortSubsetOperator subset cohorts
-subsetDetails$subsetCohorts <- unlist(lapply(subsetOps, function(x){
-  paste(unlist(lapply(x, function(y){
-    if(y$subsetType == 'CohortSubsetOperator'){
-      if(y$negate == FALSE){
-        
-        ytemp <- y
-        ytemp$name <- NULL
-        ytemp$cohortIds <- NULL
-        subsetInd <- which(unlist(lapply(subsetUnique, function(x) identical(ytemp, x))))
-        
-        # add cohort link below
-        return(paste0("<a href='#cohort-",y$cohortIds,"'> View Cohort</a> <a href='#subset-",subsetInd,"'> View Subset</a>"))
-      }
-    } 
-    return(NULL)
-  }
-         )), collapse = ',')
-}))
-
-subsetDetails$appliedSubsets <- unlist(lapply(subsetOps, function(x){
-  paste(unlist(lapply(x, function(y){
-        ytemp <- y
-        ytemp$name <- NULL
-        ytemp$cohortIds <- NULL
-        subsetInd <- which(unlist(lapply(subsetUnique, function(x) identical(ytemp, x))))
-        return(paste0("<a href='#subset-",subsetInd,"'> View Subset</a>" ))
-    }
-    )), collapse = ',')
-}))
-
-# add subset details to cohortDefintionDf?
-cohortDefintionDf <- merge(cohortDefintionDf, subsetDetails, by = 'subsetId', all.x = T)
-  
-# return: subsetUnique - a list of subset logics
-#         subsetDetails - a data.frame with subset details 
-#         cohortDefintionDf - cohort definition with subset details added
-
-} # end if subsetDefs is not null
-
-negativeControls <- NULL
-if("negativeControlOutcomes" %in% unlist(lapply(json$sharedResources, function(x) names(x)))){
-  
-  negativeControlInd <- which(unlist(lapply(json$sharedResources, function(x) "negativeControlOutcomes" %in% names(x)))) 
-  
-  negativeControlsTemp <- json$sharedResources[[negativeControlInd]]$negativeControlOutcomes
-  
-  negativeControls <- as.data.frame(do.call(rbind,lapply(negativeControlsTemp$negativeControlOutcomeCohortSet, function(x) x)))
-  
-  negativeControls$occurrenceType <- negativeControlsTemp$occurrenceType
-  negativeControls$detectOnDescendants <- negativeControlsTemp$detectOnDescendants
-  
-}
 ```
 
 # ABREVIATIONS

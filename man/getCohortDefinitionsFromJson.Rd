@@ -10,7 +10,7 @@ getCohortDefinitionsFromJson(json)
 \item{json}{The json analysis specification}
 }
 \value{
-An named R list with the elements subSetDefs, cohortIds, cohortNames and cohortDefinitions
+An named R list with the elements subsetUnique (list of subset operators), cohortDefinitions (list of cohortDefinitions) and cohortDefinitionDf (data.frame of cohort definitions)
 }
 \description{
 Extract cohorts from json

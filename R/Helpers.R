@@ -43,7 +43,7 @@ tagPrint <- function(x){
 #' 
 #' @param json The json analysis specification
 #' @return
-#' An named R list with the elements subSetDefs, cohortIds, cohortNames and cohortDefinitions
+#' An named R list with the elements subsetUnique (list of subset operators), cohortDefinitions (list of cohortDefinitions) and cohortDefinitionDf (data.frame of cohort definitions)
 #'
 #' @export
 #' 
@@ -110,16 +110,117 @@ getCohortDefinitionsFromJson <- function(
     
   cohortIds <- unlist(lapply(cohortDefinitions, function(x) x$cohortId))
   cohortNames <- unlist(lapply(cohortDefinitions, function(x) x$cohortName))
+  cohortNamesLink <- paste0(cohortNames, ' <a href="#cohort-',cohortIds,'">View</a>')
   
-  # return subSetDefsNice (add to appendix), plus cohortIds, cohortNames and cohortDefinitions
+  subsetIds <- unlist(lapply(cohortDefinitions, function(x){
+    if(!is.null(x$subsetDefinition)){
+      ParallelLogger::convertJsonToSettings(x$subsetDefinition)$definitionId
+    } else{
+      return(-1)
+    }
+  }))
+  
+  cohortDefinitionDf <- data.frame(
+    cohortName = cohortNames,
+    cohortNameWithLink = cohortNamesLink,
+    cohortId = cohortIds,
+    subsetId = subsetIds,
+    isParent = subsetIds == -1,
+    parentId = cohortIds,
+    parentName = cohortNames
+  )
+  cohortDefinitionDf$parentId[!cohortDefinitionDf$isParent] <- (cohortDefinitionDf$cohortId - cohortDefinitionDf$subsetId)[!cohortDefinitionDf$isParent]/1000
+  cohortDefinitionDf$parentName <- sapply(cohortDefinitionDf$parentId, function(x){
+    paste0(cohortNames[which(x == cohortIds)], ' <a href="#cohort-',x,'">View</a>')
+  }
+  )
+  
+  # =========== SUBSETS ============
+  #==================================
+  subsetUnique <- NULL
+  if(!is.null(subSetDefsNice)){
+    subsetDefs <- lapply(subSetDefsNice$json, function(x) ParallelLogger::convertJsonToSettings(x))
+    
+    subsetOps <- lapply(subsetDefs, function(x){
+      x$subsetOperators
+    })
+    
+    # remove name and extract cohortIds when subsetType == "CohortSubsetOperator"
+    subsetUnique <- subsetOps
+    subsetUniqueAppend <- list()
+    for(sind in 1:length(subsetUnique)){
+      for(sind2 in 1:length(subsetUnique[[sind]])){
+        subsetUnique[[sind]][[sind2]]$name <- NULL 
+        if(subsetUnique[[sind]][[sind2]]$subsetType == 'CohortSubsetOperator'){
+          subsetUnique[[sind]][[sind2]]$cohortIds <- NULL
+        }
+      }
+      subsetUniqueAppend <- append(subsetUniqueAppend,subsetUnique[[sind]])
+    }
+    subsetUnique <- unique(subsetUniqueAppend)
+    
+    # now extract into a data.frame and find out which subsets were used
+    # get subsetId cohorts 
+    
+    subsetDetails <- do.call('rbind', lapply(subsetDefs, function(x){
+      data.frame(
+        subsetName = x$name,
+        subsetId = x$definitionId,
+        packageVersion = x$packageVersion,
+        #identifierExpression = x$identifierExpression,
+        #operatorNameConcatString = x$operatorNameConcatString,
+        #subsetCohortNameTemplate = x$subsetCohortNameTemplate,
+        numberSubsetOperators = length(x$subsetOperators)
+      )
+    }))
+    
+    # add CohortSubsetOperator subset cohorts
+    subsetDetails$subsetCohorts <- unlist(lapply(subsetOps, function(x){
+      paste(unlist(lapply(x, function(y){
+        if(y$subsetType == 'CohortSubsetOperator'){
+          if(y$negate == FALSE){
+            
+            ytemp <- y
+            ytemp$name <- NULL
+            ytemp$cohortIds <- NULL
+            subsetInd <- which(unlist(lapply(subsetUnique, function(x) identical(ytemp, x))))
+            
+            # add cohort link below
+            return(paste0("<a href='#cohort-",y$cohortIds,"'> View Cohort</a> <a href='#subset-",subsetInd,"'> View Subset</a>"))
+          }
+        } 
+        return(NULL)
+      }
+      )), collapse = ',')
+    }))
+    
+    subsetDetails$appliedSubsets <- unlist(lapply(subsetOps, function(x){
+      paste(unlist(lapply(x, function(y){
+        ytemp <- y
+        ytemp$name <- NULL
+        ytemp$cohortIds <- NULL
+        subsetInd <- which(unlist(lapply(subsetUnique, function(x) identical(ytemp, x))))
+        return(paste0("<a href='#subset-",subsetInd,"'> View Subset</a>" ))
+      }
+      )), collapse = ',')
+    }))
+    
+    # add subset details to cohortDefinitionDf?
+    cohortDefinitionDf <- merge(cohortDefinitionDf, subsetDetails, by = 'subsetId', all.x = T)
+    
+    # return: subsetUnique - a list of subset logics
+    #         subsetDetails - a data.frame with subset details 
+    #         cohortDefinitionDf - cohort definition with subset details added
+    
+  }
   
   return(list(
-    subSetDefs = subSetDefsNice,
-    cohortIds = cohortIds,
-    cohortNames = cohortNames,
-    cohortDefinitions = cohortDefinitions
+    subsetUnique = subsetUnique,
+    cohortDefinitions = cohortDefinitions,
+    cohortDefinitionDf = cohortDefinitionDf
   ))
 }
+
 
 
 #' getConcepts
@@ -156,14 +257,59 @@ getConcepts <- function(
     allCodes <- conceptIds
   }
   
-  standard <- ROhdsiWebApi::getConcepts(
+  if(is.null(allCodes)){
+    allCodes <- -1
+  }
+  if(length(allCodes) == 0){
+    allCodes <- -1
+  }
+  
+  # wrapping in tryCatch as this can error if
+  # the concepts are not on this webApi
+  standard <- tryCatch({ROhdsiWebApi::getConcepts(
     conceptIds = allCodes, 
     baseUrl = baseUrl
+  )}, 
+  error = function(e){print(e); return(
+    data.frame(
+      conceptId = allCodes,
+      conceptName = 'None',
+      standardConcept = 'N',
+      standardConceptCaption = 'Non-Standard',
+      invalidReason = 'V',
+      invalidReasonCaption = 'madeup', 
+      conceptCode = 'madeup',
+      domainId = 'empty', 
+      vocabularyId = 'madeup', 
+      conceptClassId = 'madeup',
+      validStartDate = 0, 
+      validEndDate = 1
+    )
+  )}
   )
   
-  source <- ROhdsiWebApi::getSourceConcepts(
+  # wrapping in tryCatch as this can error if
+  # the concepts are not on this webApi
+  source <- tryCatch({ROhdsiWebApi::getSourceConcepts(
     conceptIds = allCodes, 
     baseUrl = baseUrl
+  )},
+  error = function(e){print(e); return(
+    data.frame(
+      conceptId = 0,
+      conceptName = 'None',
+      standardConcept = 'N',
+      standardConceptCaption = 'Non-Standard',
+      invalidReason = 'V',
+      invalidReasonCaption = 'madeup', 
+      conceptCode = 'madeup',
+      domainId = 'empty', 
+      vocabularyId = 'madeup', 
+      conceptClassId = 'madeup',
+      validStartDate = 0, 
+      validEndDate = 1
+    )
+  )}
   )
   
   return(list(
@@ -172,6 +318,40 @@ getConcepts <- function(
   ))
   
 }
+
+
+#' getNegativeControlsFromJson
+#'
+#' @description
+#' Extract cohorts from json
+#'
+#' @details
+#' Returns a names list with the cohorts
+#' 
+#' @param json The json analysis specification
+#' @return
+#' A data.frame with the negative control details or NULL if no negative controls
+#'
+#' @export
+#' 
+getNegativeControlsFromJson <- function(json){
+  negativeControls <- NULL
+  if("negativeControlOutcomes" %in% unlist(lapply(json$sharedResources, function(x) names(x)))){
+    
+    negativeControlInd <- which(unlist(lapply(json$sharedResources, function(x) "negativeControlOutcomes" %in% names(x)))) 
+    
+    negativeControlsTemp <- json$sharedResources[[negativeControlInd]]$negativeControlOutcomes
+    
+    negativeControls <- as.data.frame(do.call(rbind,lapply(negativeControlsTemp$negativeControlOutcomeCohortSet, function(x) x)))
+    
+    negativeControls$occurrenceType <- negativeControlsTemp$occurrenceType
+    negativeControls$detectOnDescendants <- negativeControlsTemp$detectOnDescendants
+    
+  }
+  
+  return(negativeControls)
+}
+
 
 
 
@@ -195,7 +375,9 @@ getFunctionFromArgName <- function(
     argumentName
     ){
   
-  argumentName <- gsub('Args','', argumentName)
+  #argumentName <- gsub('Args','', argumentName)
+  # change for new CM
+  argumentName <- paste0('create',toupper(substring(argumentName, 1, 1)), substring(argumentName, 2))
   packageFunctions <- gsub('.Rd','',names(tools::Rd_db(package)))
   result <- packageFunctions[unlist(lapply(packageFunctions, function(x) length(grep(argumentName, x))>0))]
   
@@ -236,21 +418,24 @@ getHelpText <- function(
   
   
   if(is.null(input)){
-    
+
     val <- paste0(
       "^.*description\\{\\s*|\\s*",
-      #"\\}.*$"
-      "\n\\}.*$"
+      "\\}.*$"  # editing from "\n\\}.*$"
     )
     
     desc <- gsub(val, '', textOfInt)
     return(desc)
   }
   
+  #val <- paste0(
+  #  "^.*item\\{",input,"\\}\\{\\s*|\\s*",
+  #  "\\}\n\n.*$"
+  #)
+  
   val <- paste0(
     "^.*item\\{",input,"\\}\\{\\s*|\\s*",
-    #"\\}.*$"
-    "\\}\n\n.*$"
+    "\\}\n.*$"
   )
   
   desc <- gsub(val, '', textOfInt)
@@ -395,20 +580,75 @@ listToDf <- function(
     valueName = 'value'
     ){
   
+  saveRDS(settings, '/Users/jreps/Documents/GitHub/ProtocolGenerator/settings.rds')
+  settings <- readRDS('/Users/jreps/Documents/GitHub/ProtocolGenerator/settings.rds')
   # convert vectors to char 
   nameSet <- names(settings)
-  convertToChar <- sapply(nameSet, function(x) length(settings[[x]]) > 1 & !inherits(settings[[x]], 'list'))
+  valueSet <- settings
+  convertToChar <- sapply(nameSet, function(x) length(settings[[x]]) > 1)
+  
   if(sum(convertToChar) > 0){
-    settings[convertToChar] <- as.character(settings[convertToChar])
+    listNames <- names(convertToChar)[convertToChar]
+    
+    # remove the lists from valueSet and nameSet
+    listSettings <- list()
+    for(listName in listNames){
+      
+      # replace NULLs with "NULL"
+      tempSettings <- settings[listName][[1]]
+      if(!is.list(tempSettings)){
+        tempSettings <- list(val = paste(tempSettings, collapse = ','))
+        names(tempSettings) <- listName
+        listSettings[[length(listSettings)+1]] <- tempSettings
+      } else{
+        nullInds <- which(unlist(lapply(tempSettings, function(x) is.null(x))))
+        if(length(nullInds) > 0){
+          for(nullInd in nullInds){
+            tempSettings[[nullInd]] <- "NULL"
+          }
+        }
+        names(tempSettings) <- paste0(listName,'.',names(tempSettings))
+        listSettings[[length(listSettings)+1]] <- tempSettings
+      }
+      
+      valueSet[listName] <- NULL
+      nameSet <- nameSet[!nameSet %in% listName]
+    }
+    
+    # now add the list values
+    for(listSetting in listSettings){
+      # convert lists to json string
+      listInds <- which(unlist(lapply(listSetting, function(x) is.list(x))))
+      if(length(listInds) > 0){
+        for(listInd in listInds){
+          listSetting[[listInd]] <- as.character(ParallelLogger::convertSettingsToJson(listSetting[[listInd]]))
+        }
+      }
+      
+      nameSet <- c(nameSet,names(unlist(listSetting)))
+      valueSet <- c(valueSet,unlist(listSetting))
+    }
   }
   
-  values <- unlist(settings)
-  names <- names(values)
+  #if(sum(convertToChar) > 0){
+  #  settings[convertToChar] <- as.character(unlist(settings[convertToChar]))
+  #}
+  
+  #values <- unlist(settings)
+  #names <- names(values)
+  
+  # replace NULL or c() values with ""
+  noVals <- sapply(valueSet, length)
+  if(sum( noVals == 0) > 0){
+    for(ind in which(noVals == 0)){
+      valueSet[ind] <- ""
+    }
+  }
   
   df <- data.frame(
-    input = unlist(lapply(strsplit(names, '\\.'), function(x) x[1])),
-    level2 = unlist(lapply(strsplit(names, '\\.'), function(x) ifelse(is.na(x[2]), " ", x[2]))),
-    value = values, 
+    input = unlist(lapply(strsplit(nameSet, '\\.'), function(x) x[1])),
+    level2 = unlist(lapply(strsplit(nameSet, '\\.'), function(x) ifelse(is.na(x[2]), " ", x[2]))),
+    value = unlist(valueSet), 
     row.names = NULL
   ) 
   
@@ -531,16 +771,20 @@ getSettingsTable <- function(
     functionName
     )
   
-  settingsDf <- listToDf(
-    settings, 
-    valueName = 'value'
+  if(is.null(settings)){
+    settingsDf <- listToDf(list(isNUll = 'NULL'))
+  } else{
+    settingsDf <- listToDf(
+      settings, 
+      valueName = 'value'
     )
+  }
   
   completeTb <- merge(
     descAndDefault, 
     settingsDf, 
     by = c('input', 'level2'),
-    all.y = T
+    all.y = TRUE
   )
   
   # check whether defaultValue = value
@@ -619,22 +863,56 @@ reportTableFormat <- function(
     groupBy = NULL,
     columns = NULL, 
     elementId = NULL,
-    caption
+    caption,
+    groupByButton = FALSE
 ){
   
-  reactable::reactable(
-    data = table,
-    groupBy = groupBy, 
-    striped = T, 
-    searchable = T,
-    resizable = T, 
-    defaultPageSize = 5,
-    showPageSizeOptions = T,
-    showSortIcon = T, 
-    columns = columns, 
-    rownames = F,
-    elementId = elementId
-  )
+  if(groupByButton){
+    shiny::tagList(
+      shiny::tags$button(
+        "Group/Ungroup",
+        # 2. JavaScript call: toggleGroupBy('table-id', 'column-name')
+        onclick = paste0("Reactable.toggleGroupBy('",elementId,"', '",groupBy,"')"),
+        style = "
+    background-color: #0f72db;
+    color: white;
+    border: none;
+    padding: 2px 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  "
+      ),
+      
+      reactable::reactable(
+        data = table,
+        groupBy = groupBy, 
+        striped = TRUE, 
+        searchable = TRUE,
+        resizable = TRUE, 
+        defaultPageSize = 5,
+        showPageSizeOptions = TRUE,
+        showSortIcon = TRUE, 
+        columns = columns, 
+        rownames = FALSE,
+        elementId = elementId
+      )
+    )
+  } else{
+    reactable::reactable(
+      data = table,
+      groupBy = groupBy, 
+      striped = T, 
+      searchable = T,
+      resizable = T, 
+      defaultPageSize = 5,
+      showPageSizeOptions = T,
+      showSortIcon = T, 
+      columns = columns, 
+      rownames = F,
+      elementId = elementId
+    )
+  }
   
 }
 
@@ -671,6 +949,7 @@ formatCovariateSettings <- function(
       inds <- c(
         grep('Demographics', names(tempSettings)),
         grep('Drug', names(tempSettings)),
+        grep('Device', names(tempSettings)),
         grep('Visit', names(tempSettings)),
         grep('Condition', names(tempSettings)),
         grep('Procedure', names(tempSettings)),
@@ -684,6 +963,10 @@ formatCovariateSettings <- function(
     } else if(attr(tempSettings,"fun") == "getDbCohortBasedCovariatesData"){
       fun <- 'createCohortBasedCovariateSettings'
       package <- 'FeatureExtraction'
+      tempSettings$covariateCohorts <- paste0(sort(tempSettings$covariateCohorts$cohortName), collapse = ' , ')
+    } else if(attr(tempSettings,"fun") == "Characterization::getDbDuringCovariateData"){
+      fun <- 'getDbDuringCovariateData'
+      package <- 'Characterization'
     } else{
       fun <- attr(tempSettings,"fun")
       package <- ''
