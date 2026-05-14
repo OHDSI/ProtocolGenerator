@@ -580,8 +580,8 @@ listToDf <- function(
     valueName = 'value'
     ){
   
-  saveRDS(settings, '/Users/jreps/Documents/GitHub/ProtocolGenerator/settings.rds')
-  settings <- readRDS('/Users/jreps/Documents/GitHub/ProtocolGenerator/settings.rds')
+  ##saveRDS(settings, '/Users/jreps/Documents/GitHub/ProtocolGenerator/settings.rds')
+  ##settings <- readRDS('/Users/jreps/Documents/GitHub/ProtocolGenerator/settings.rds')
   # convert vectors to char 
   nameSet <- names(settings)
   valueSet <- settings
@@ -772,6 +772,8 @@ getSettingsTable <- function(
     )
   
   if(is.null(settings)){
+    settingsDf <- listToDf(list(isNUll = 'NULL'))
+  } else if(identical(settings, list())){
     settingsDf <- listToDf(list(isNUll = 'NULL'))
   } else{
     settingsDf <- listToDf(
