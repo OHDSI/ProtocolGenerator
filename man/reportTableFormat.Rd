@@ -9,7 +9,8 @@ reportTableFormat(
   groupBy = NULL,
   columns = NULL,
   elementId = NULL,
-  caption
+  caption,
+  groupByButton = FALSE
 )
 }
 \arguments{

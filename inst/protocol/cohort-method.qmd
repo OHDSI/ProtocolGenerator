@@ -96,44 +96,9 @@ for(cmi in 1:length(cmOutUnique)){
       table = cmOutUnique[[cmi]],
       groupBy = "parentNameOutcome", 
       groupByButton = TRUE,
-      columns = list(
-        priorOutcomeLookback = reactable::colDef(
-          aggregate = "unique",
-          show = TRUE,
-          name = 'Prior Outcome Lookback (days)',
-          filterable = TRUE
+      columns = ProtocolGenerator::cmOutcomeColDef(
+        colNames = colnames(cmOutUnique[[cmi]])
         ),
-        outcomeId = reactable::colDef(show = FALSE),
-        outcomeOfInterest = reactable::colDef(show = FALSE),
-        subsetIdOutcome = reactable::colDef(show = FALSE),
-        parentNameOutcome = reactable::colDef(
-          show = TRUE,
-          name = 'Outcome Parent',
-          filterable = TRUE,
-          html = TRUE, 
-          minWidth = 300
-        ),
-        cohortNameOutcome = reactable::colDef(
-          show = TRUE,
-          name = 'Outcome',
-          html = TRUE,
-          filterable = TRUE, 
-          minWidth = 300
-          ),
-        cohortNameWithLinkOutcome = reactable::colDef(
-          show = FALSE,
-          name = 'Outcome',
-          html = TRUE,
-          filterable = TRUE
-        ),
-        isParentOutcome = reactable::colDef(show = F),
-        parentIdOutcome = reactable::colDef(show = F),
-        subsetNameOutcome = reactable::colDef(show = F),
-        packageVersionOutcome = reactable::colDef(show = F),
-        numberSubsetOperatorsOutcome = reactable::colDef(show = F),
-        subsetCohortsOutcome = reactable::colDef(show = F),
-        appliedSubsetsOutcome = reactable::colDef(show = F)
-      ),
     elementId = paste0("cm-out-tab-",cmi)
     )
     )

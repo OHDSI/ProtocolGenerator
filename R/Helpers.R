@@ -51,29 +51,30 @@ getCohortDefinitionsFromJson <- function(
     json
 ){
   
-  cohortDefinitions <- json$sharedResources[[which("cohortDefinitions" == unlist(lapply(json$sharedResources, function(x) names(x))))]]$cohortDefinitions
+  cohortDefinitions <- json$sharedResources[[which(unlist(lapply(json$sharedResources, function(x) "cohortDefinitions" %in% names(x))))]]$cohortDefinitions
   
   cohortNames <- as.data.frame(do.call('rbind', cohortDefinitions))
   
   # append subsets to cohortDefinitions
   
   subsetDefInd <- which(unlist(lapply(json$sharedResources, function(x) "subsetDefs" %in% names(x))))
-  subsetDefs <- json$sharedResources[[subsetDefInd]]$subsetDefs
-  
-  subSetDefsNice <- data.frame(
-    subsetName = unlist(
-      lapply(1:length(subsetDefs), function(i){
-        paste0(jsonlite::fromJSON(subsetDefs[i])$subsetOperators$name, collapse = ' - ')
-      })
-    ),
-    subsetId = unlist(
-      lapply(1:length(subsetDefs), function(i){
-        jsonlite::fromJSON(subsetDefs[i])$definitionId
-      })
-    ),
-    json = subsetDefs
-  )
-  
+  if(length(subsetDefInd) > 0){
+    subsetDefs <- json$sharedResources[[subsetDefInd]]$subsetDefs
+    
+    subSetDefsNice <- data.frame(
+      subsetName = unlist(
+        lapply(1:length(subsetDefs), function(i){
+          paste0(jsonlite::fromJSON(subsetDefs[i])$subsetOperators$name, collapse = ' - ')
+        })
+      ),
+      subsetId = unlist(
+        lapply(1:length(subsetDefs), function(i){
+          jsonlite::fromJSON(subsetDefs[i])$definitionId
+        })
+      ),
+      json = subsetDefs
+    )
+
   # now get the actual subsets
   cohortSubsetsInd <- which(unlist(lapply(json$sharedResources, function(x) "cohortSubsets" %in% names(x))))
   cohortSubsets <- json$sharedResources[[cohortSubsetsInd]]$cohortSubsets
@@ -105,8 +106,36 @@ getCohortDefinitionsFromJson <- function(
         )
     }
       )
+  } else{
+    subSetDefsNice <- NULL 
+    cohortSubsetsDefinitions <- NULL
+  }
   
-  cohortDefinitions <- append(cohortDefinitions, cohortSubsetsDefinitions)
+  # add code for templates
+  templateDefsInd <- which(unlist(lapply(json$sharedResources, function(x) "templateDefs" %in% names(x))))
+  if(length(templateDefsInd) > 0){
+    templateDefs <- json$sharedResources[[templateDefsInd]]$templateDefs
+  
+    templateDefinitions <- lapply(
+      X = templateDefs, 
+      FUN = function(x){
+        list(
+          cohortName = x$references$cohortName,
+          cohortId = x$references$cohortId
+        )}
+    )
+                                  
+  } else{
+    templateDefinitions <- NULL
+  }
+  
+  
+  cohortDefinitions <- append(
+    append(
+      cohortDefinitions, 
+      cohortSubsetsDefinitions),
+    templateDefinitions
+  )
     
   cohortIds <- unlist(lapply(cohortDefinitions, function(x) x$cohortId))
   cohortNames <- unlist(lapply(cohortDefinitions, function(x) x$cohortName))
@@ -242,17 +271,22 @@ getCohortDefinitionsFromJson <- function(
 #' @export
 #' 
 getConcepts <- function(
-    expression, 
+    expression = NULL, 
     conceptIds = NULL,
     baseUrl = 'https://api.ohdsi.org/WebAPI'
     ){
   
+
   # if concepts are not specified, extract from the expression instead
   if(is.null(conceptIds)){
-    allCodes <- ROhdsiWebApi::resolveConceptSet(
-      conceptSetDefinition = expression, 
-      baseUrl = baseUrl
-    )
+    if(is.null(expression)){
+      allCodes <- -1
+    } else{
+      allCodes <- ROhdsiWebApi::resolveConceptSet(
+        conceptSetDefinition = expression, 
+        baseUrl = baseUrl
+      )
+    } 
   } else{
     allCodes <- conceptIds
   }
@@ -344,8 +378,12 @@ getNegativeControlsFromJson <- function(json){
     
     negativeControls <- as.data.frame(do.call(rbind,lapply(negativeControlsTemp$negativeControlOutcomeCohortSet, function(x) x)))
     
-    negativeControls$occurrenceType <- negativeControlsTemp$occurrenceType
-    negativeControls$detectOnDescendants <- negativeControlsTemp$detectOnDescendants
+    if(!nrow(negativeControls) == 0){
+      negativeControls$occurrenceType <- negativeControlsTemp$occurrenceType
+      negativeControls$detectOnDescendants <- negativeControlsTemp$detectOnDescendants
+    } else{
+      negativeControls <- NULL
+    }
     
   }
   

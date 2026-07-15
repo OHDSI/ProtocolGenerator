@@ -147,7 +147,11 @@ extractCohortMethodSettings <- function(
   for(i in 1:length(settingsCm$targetComparatorOutcomesList)){
     
     # get the excluded concepts
-    excludeConcepts[[i]] <- settingsCm$targetComparatorOutcomesList[[i]]$excludedCovariateConceptIds
+    if(length(settingsCm$targetComparatorOutcomesList[[i]]$excludedCovariateConceptIds) >0){
+      excludeConcepts[[i]] <- settingsCm$targetComparatorOutcomesList[[i]]$excludedCovariateConceptIds
+    } else{
+      excludeConcepts[[i]] <- c(-1)
+    }
     
     outcomeCm <- data.frame(
       outcomeId = unlist(lapply(settingsCm$targetComparatorOutcomesList[[i]]$outcomes, function(x) x$outcomeId)),
@@ -162,8 +166,12 @@ extractCohortMethodSettings <- function(
   # now process the negative list and excludeConcepts list
   commonExclude <- excludeConcepts[[1]]
   if(length(excludeConcepts) > 1){
-    for(ind in 2:length(excludeConcepts)){
-      commonExclude <- intersect(excludeConcepts[[ind]],commonExclude) 
+    if(commonExclude != -1){
+      for(ind in 2:length(excludeConcepts)){
+        commonExclude <- intersect(excludeConcepts[[ind]],commonExclude) 
+      }
+    } else{
+      commonExclude <- c()
     }
   }
   nonCommonExclude <- lapply(excludeConcepts, function(x) setdiff(x, commonExclude))
@@ -211,6 +219,13 @@ extractCohortMethodSettings <- function(
     ),
     by = 'tcoId'
   )
+  
+  if(!'subsetCohortsTarget' %in% colnames(tcCombos)){
+    tcCombos$subsetCohortsTarget <- ''
+  }
+  if(!'appliedSubsetsTarget' %in% colnames(tcCombos)){
+    tcCombos$appliedSubsetsTarget <- ''
+  }
   
   tcCombos <- tcCombos %>% 
     dplyr::relocate('cohortNameWithLinkNest') %>%
@@ -384,4 +399,70 @@ cmColDef <- function(
   }
   
   return(colDef)
+}
+
+
+#' cmOutcomeColDef
+#'
+#' @description
+#' List with column names for the cohort method outcome table
+#'
+#' @details
+#' Returns a names list with the cohorts names
+#' 
+#' @param colNames Optional a vector of column names to restrict to
+#' 
+#' @return
+#' A column definition list
+#'
+#' @export
+#'
+#'
+cmOutcomeColDef <- function(
+    colNames
+    )
+  {
+
+  colDefs <- list(
+  priorOutcomeLookback = reactable::colDef(
+    aggregate = "unique",
+    show = TRUE,
+    name = 'Prior Outcome Lookback (days)',
+    filterable = TRUE
+  ),
+  outcomeId = reactable::colDef(show = FALSE),
+  outcomeOfInterest = reactable::colDef(show = FALSE),
+  subsetIdOutcome = reactable::colDef(show = FALSE),
+  parentNameOutcome = reactable::colDef(
+    show = TRUE,
+    name = 'Outcome Parent',
+    filterable = TRUE,
+    html = TRUE, 
+    minWidth = 300
+  ),
+  cohortNameOutcome = reactable::colDef(
+    show = TRUE,
+    name = 'Outcome',
+    html = TRUE,
+    filterable = TRUE, 
+    minWidth = 300
+  ),
+  cohortNameWithLinkOutcome = reactable::colDef(
+    show = FALSE,
+    name = 'Outcome',
+    html = TRUE,
+    filterable = TRUE
+  ),
+  isParentOutcome = reactable::colDef(show = F),
+  parentIdOutcome = reactable::colDef(show = F),
+  subsetNameOutcome = reactable::colDef(show = F),
+  packageVersionOutcome = reactable::colDef(show = F),
+  numberSubsetOperatorsOutcome = reactable::colDef(show = F),
+  subsetCohortsOutcome = reactable::colDef(show = F),
+  appliedSubsetsOutcome = reactable::colDef(show = F)
+)
+  
+  colDefs <- colDefs[names(colDefs) %in% colNames]
+  
+  return(colDefs)
 }
