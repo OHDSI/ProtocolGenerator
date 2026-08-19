@@ -5,7 +5,7 @@
 \title{getConcepts}
 \usage{
 getConcepts(
-  expression,
+  expression = NULL,
   conceptIds = NULL,
   baseUrl = "https://api.ohdsi.org/WebAPI"
 )

@@ -6,7 +6,7 @@
 #' @details
 #' Returns a names list with the cohorts
 #' 
-#' @param cohortMethodModuleSettings. The cohort method module specification
+#' @param cohortMethodModuleSettings The cohort method module specification
 #' @param negativeControls NULL or a data.frame of the negative controls
 #' @param cohortDefinitionDf The data.frame with the cohort definition details
 #' 

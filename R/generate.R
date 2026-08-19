@@ -44,6 +44,9 @@ getDemoLoc <- function(){
 #' @param conceptFolder The location to save the excel files if downloadConcepts is TRUE and conceptsAsExcel is TRUE
 #' @param addCohortDefinitions Whether to add the cohorts to the protocol (can make document large)
 #' @param exportCohortLocation if not NULL the location where the table tracter will be exported to csv.
+#' @param headerColor The CSS color to use for the protocol header banner (optional)
+#' @param headerLogoLocation The location of a logo image to add to the protocol header banner (optional)
+#' @param protocolSubheading Optional subheading to show under the protocol title
 #' 
 #' @return
 #' An named R list with the elements 'standard' and 'source'
@@ -65,7 +68,10 @@ generateProtocol <- function(
     conceptsAsExcel = FALSE,
     conceptFolder = outputLocation,
     addCohortDefinitions = TRUE,
-    exportCohortLocation = NULL
+    exportCohortLocation = NULL,
+    headerColor = "#336B91",
+    headerLogoLocation = NULL,
+    protocolSubheading = NULL
 ){
   
   if(missing(jsonLocation)){
@@ -133,7 +139,10 @@ generateProtocol <- function(
       addCohortDefinitions = addCohortDefinitions,
       conceptsAsExcel = conceptsAsExcel,
       conceptFolder = conceptFolder,
-      exportCohortLocation = exportCohortLocation
+      exportCohortLocation = exportCohortLocation,
+      headerColor = headerColor,
+      headerLogoLocation = if(!is.null(headerLogoLocation)) normalizePath(headerLogoLocation, mustWork = FALSE) else NULL,
+      protocolSubheading = protocolSubheading
     )
   )
   

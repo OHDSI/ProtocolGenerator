@@ -11,11 +11,11 @@ extractCohortMethodSettings(
 )
 }
 \arguments{
+\item{cohortMethodModuleSettings}{The cohort method module specification}
+
 \item{negativeControls}{NULL or a data.frame of the negative controls}
 
 \item{cohortDefinitionDf}{The data.frame with the cohort definition details}
-
-\item{cohortMethodModuleSettings.}{The cohort method module specification}
 }
 \value{
 An named R list with ...

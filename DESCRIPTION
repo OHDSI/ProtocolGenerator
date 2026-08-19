@@ -1,8 +1,8 @@
 Package: ProtocolGenerator
 Type: Package
 Title: Generate HTML OHDSI study protocols
-Version: 1.0.0
-Date: 2025-4-9
+Version: 1.0.1
+Date: 2026-8-19
 Authors@R: c(
   person("Jenna", "Reps", email = "jreps@its.jnj.com", role = c("aut", "cre"))
   )

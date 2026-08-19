@@ -23,6 +23,8 @@ reportTableFormat(
 \item{elementId}{Element ID for the widget.}
 
 \item{caption}{A table caption}
+
+\item{groupByButton}{Whether to add a button that lets you group/ungroup rows in the table}
 }
 \value{
 Details about all inputs into the functionName within R package of interest

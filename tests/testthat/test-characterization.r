@@ -296,3 +296,9 @@ test_that("characterizationColDef returns expected reactable column definitions"
   testthat::expect_s3_class(result$tar, "colDef")
   testthat::expect_s3_class(result$setting, "colDef")
 })
+
+
+
+# add tests for TTE/Dechal
+
+# add tests for v4 Char RF/CS

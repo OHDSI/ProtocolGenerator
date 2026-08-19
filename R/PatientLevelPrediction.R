@@ -50,7 +50,7 @@ getPlpSettings <- function(
   # covariate set - get attr(,"fun")
   covSet <- c()
   for(cind in 1:length(modelDesignUnique)){
-    if(class(modelDesignUnique[[cind]]$covariateSettings) == 'covariateSettings'){
+    if(inherits(modelDesignUnique[[cind]]$covariateSettings, 'covariateSettings')){
       modelDesignUnique[[cind]]$covariateSettings <- list(modelDesignUnique[[cind]]$covariateSettings)
     }
     

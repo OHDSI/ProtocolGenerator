@@ -135,6 +135,12 @@ processRiskFactorSettings <- function(
   row.names(firstTs) <- NULL
   
   singleTargetSet <- all.equal(allTs, firstTs)
+  if(length(singleTargetSet) > 1){
+    singleTargetSet <- FALSE
+  }
+  if(!is.logical(singleTargetSet)){
+    singleTargetSet <- FALSE
+  }
   
   if(singleTargetSet){
     # all outcomes by all targets 
@@ -247,6 +253,12 @@ processCaseSeriesSettings <- function(
   row.names(firstTs) <- NULL
   
   singleTargetSet <- all.equal(allTs, firstTs)
+  if(length(singleTargetSet) > 1){
+    singleTargetSet <- FALSE
+  }
+  if(!is.logical(singleTargetSet)){
+    singleTargetSet <- FALSE
+  }
   
   if(singleTargetSet){
     # all outcomes by all targets 

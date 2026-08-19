@@ -891,8 +891,9 @@ defaultColumns <- function(data){
 #' @param table data.frame or tibble with the data to present
 #' @param groupBy column to group by (optional)
 #' @param columns The column details (create default using defaultColumns())
-#' @param caption  A table caption
 #' @param elementId Element ID for the widget.
+#' @param caption  A table caption
+#' @param groupByButton Whether to add a button that lets you group/ungroup rows in the table
 #' @return
 #' Details about all inputs into the functionName within R package of interest
 #'
