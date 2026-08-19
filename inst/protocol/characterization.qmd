@@ -22,6 +22,17 @@ caseSeries <- ProtocolGenerator:::processCaseSeriesSettings(
   cohortDefinitionDf = cohortDefinitionDf
   )
 
+# add dechalRechal and timeToEvent functions
+tte <- ProtocolGenerator:::processTimeToEventSettings(
+      CharacterizationModuleSettings = CharacterizationModuleSettings,
+      cohortDefinitionDf = cohortDefinitionDf
+)
+
+dc <- ProtocolGenerator:::processDechalSettings(
+      CharacterizationModuleSettings = CharacterizationModuleSettings,
+  cohortDefinitionDf = cohortDefinitionDf
+)
+
 # summary detaisls
 numTbSettings <- length(targetBaseline$settingsJson)
 numRfSettings <- length(riskFactor$settingsJson)
@@ -285,8 +296,17 @@ cat('\n::: {.callout-important collapse="true"}')
 # Summary of time-to-event
 
 ```{r, echo=FALSE, results = 'asis', include=FALSE}
-cTargets <- cohortDefinitionDf[cohortDefinitionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$timeToEventSettings[[1]]$targetIds, ]
-cOutcomes <- cohortDefinitionDf[cohortDefinitionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$timeToEventSettings[[1]]$outcomeIds, ]
+
+tteSettingCount <- length(tte$popList)
+cTargets <- unique(do.call('rbind', tte$popList))
+cOutcomes <- unique(do.call('rbind', tte$outcomeList))
+
+if(tteSettingCount == 1){
+  tteSettingRef <- '@sec-char-tte-setting-end'
+} else{
+  tteSettingRef <- '@sec-char-tte-setting-1 - @sec-char-tte-setting-end'
+}
+
 ```
 
 For each specified target cohort and outcome, we identify all outcome occurrences among cohort members and compute the days from the target index to each occurrence (negative = before index, positive = after index). Each occurrence is labeled by:
@@ -296,50 +316,63 @@ For each specified target cohort and outcome, we identify all outcome occurrence
 
 We then aggregate occurrence counts by day relative to the index and by label, producing daily frequency tables (and optional plots) that show when outcomes occur across the target population and how timing differs by occurrence type. See more [here](https://ohdsi.github.io/Characterization/articles/Specification.html#time-to-event).    
 
-In this specified analysis there are ``r length(unique(cTargets$parentId))`` unique parent targets (corresponding to ``r length(unique(cTargets$cohortId))`` unique targets with subsets) see @sec-char-tte-targets and  ``r length(unique(cOutcomes$parentId)) `` unique parent outcomes (corresponding to ``r length(unique(cOutcomes$cohortId))`` unique outcomes with subsets) see @sec-char-tte-outcomes. 
+In this specified analysis there are ``r tteSettingCount`` setting(s) containing target and outcome combinations to include, see `r tteSettingRef`. Across all settings there are ``r length(unique(cTargets$parentId))`` unique parent targets (corresponding to ``r length(unique(cTargets$cohortId))`` unique targets with subsets) and  ``r length(unique(cOutcomes$parentId)) `` unique parent outcomes (corresponding to ``r length(unique(cOutcomes$cohortId))`` unique outcomes with subsets). 
 
 :::
 
 ```{r, echo=FALSE, results = 'asis'}
 
-  
-  cat("\n\n#### Targets {#sec-char-tte-targets} \n")    
-if(nrow(cTargets)>0){ 
+  for(i in 1:tteSettingCount){
+    if(tteSettingCount == 1){
+      # do not print the number for the setting as there is only 1
+      iVal <- ""
+    } else{
+      iVal <- i
+    }
+    
+    if( i == tteSettingCount){
+        cat(paste0("\n\n#### Setting ",iVal," {#sec-char-tte-setting-end} \n"))  
+    } else{
+        cat(paste0("\n\n#### Setting ",iVal," {#sec-char-tte-setting-",i,"} \n"))  
+    }
+  cat(paste0("\n\n##### Targets {#sec-char-tte-targets-",i,"} \n"))    
+if(nrow(tte$popList[[i]])>0){ 
   
   cat('\n::: {.callout-important collapse="true"}')
   cat('\n# Targets used in time-to-event\n')
   
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = cTargets %>%
+    table = tte$popList[[i]] %>%
       dplyr::arrange(.data$parentName,.data$cohortName), 
     groupBy = 'parentName', 
     elementId = 'tte-targets',
     groupByButton = TRUE,
-    columns = cColumns[names(cColumns) %in% colnames(cTargets)], 
+    columns = cColumns[names(cColumns) %in% colnames(tte$popList[[i]])], 
     caption = 'Target cohorts included in the analysis.'
     )))
   cat('\n:::\n')
    cat('\n\n')
   }
   
-  cat("\n\n#### Outcomes {#sec-char-tte-outcomes} \n")
-      if(nrow(cOutcomes)>0){ 
+  cat(paste0("\n\n##### Outcomes {#sec-char-tte-outcomes-",i,"} \n"))
+      if(nrow(tte$outcomeList[[i]])>0){ 
   cat('\n::: {.callout-important collapse="true"}')
   cat('\n# Outcomes used in time-to-event\n')
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = cOutcomes %>%
+    table = tte$outcomeList[[i]] %>%
       dplyr::arrange(.data$parentName,.data$cohortName), 
     groupBy = 'parentName', 
     elementId = 'tte-outcomes',
     groupByButton = TRUE,
-    columns = cColumns[names(cColumns) %in% colnames(cOutcomes)], 
+    columns = cColumns[names(cColumns) %in% colnames(tte$outcomeList[[i]])], 
     caption = 'Outcome cohorts included in the analysis.'
     )))
  cat('\n:::\n')
    cat('\n\n')
       }
+  }
 
 tteTargets <-   unique(cTargets$cohortId)
 tteOutcomes <-  unique(cOutcomes$cohortId)
@@ -352,64 +385,85 @@ tteOutcomes <-  unique(cOutcomes$cohortId)
 ::: {.callout-important collapse="false"}
 # Summary of dechallenge rechallenge
 ```{r, echo=FALSE, results = 'asis', include=FALSE}
-cTargets <- cohortDefinitionDf[cohortDefinitionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$targetCohortDefinitionIds, ]
-cOutcomes <- cohortDefinitionDf[cohortDefinitionDf$cohortId %in% CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$outcomeCohortDefinitionIds, ]
+
+dcSettingCount <- length(dc$popList)
+cTargets <- unique(do.call('rbind', dc$popList))
+cOutcomes <- unique(do.call('rbind', dc$outcomeList))
+
+if(dcSettingCount == 1){
+  dcSettingRef <- '@sec-char-dr-settings-end'
+} else{
+  dcSettingRef <- '@sec-char-dr-settings-1 - @sec-char-dr-settings-end'
+}
+
 ```
 
 This analysis lets you identify cases where a patient had an outcome while exposed to a target drug and the target drug is stopped shortly after the outcome (this may correspond to patients stopping the drug due to the outcome starting). This is known as dechallenge.  If the outcome stops after the drug stops then this is a dechallenge success, otherwise, if the outcome continues it is a dechallenge fail.  For the cases where there was a dechallenge, we are then interested in how often the patient restarts the drug at a later time, rechallenges, and whether the outcome occurs shortly after starting exposure (rechallenge success) or does not occur (rechallenge fail). See more [here](https://ohdsi.github.io/Characterization/articles/Specification.html#dechallenge-rechallenge). 
 
 For each Target and Outcome combination this calculates the number of patients in the target population with a dechallenge (when a target exposure era ends within decallengeStopInterval days of an outcome) in addition to the number of these that are fails (the outcome is recorded within dechallengeEvaluationWindow days after the target exposure era ends) and successful (the outcome is not recorded within dechallengeEvaluationWindow days after the target exposure era ends). Then for those with a successful dechallenge, rechallenges are counted based on whether an outcome occurs in a new target exposure era and a rechallenge fail is counted if the target exposure ends within decallengeStopInterval days of the outcome.  The total number of dechallenges, dechallenge fails, dechallenge success, rechallenges, rechallenge fails and rechallenge success are calculated per target, outcome and setting.
 
-In this analysis there are ``r length(unique(cTargets$parentId)) `` unique parent targets (corresponding to ``r length(unique(cTargets$cohortId))`` unique targets with subsets) see @sec-char-dr-targets and  ``r length(unique(cOutcomes$parentId)) `` unique parent outcomes (corresponding to ``r length(unique(cOutcomes$cohortId))`` unique outcomes with subsets) see @sec-char-dr-outcomes. The settings (decallengeStopInterval and dechallengeEvaluationWindow) are in @sec-dcrc-settings.
+In this analysis there are ``r dcSettingCount `` dechallenge-rechallenge setting(s) specifying different target and outcome combinations and setting values (decallengeStopInterval and dechallengeEvaluationWindow), see `r dcSettingRef`. In total there are ``r length(unique(cTargets$parentId)) `` unique parent targets (corresponding to ``r length(unique(cTargets$cohortId))`` unique targets with subsets) and  ``r length(unique(cOutcomes$parentId)) `` unique parent outcomes (corresponding to ``r length(unique(cOutcomes$cohortId))`` unique outcomes with subsets).
 
 :::
 
 ```{r, echo=FALSE, results = 'asis'}
   
-  cat("\n\n#### Targets {#sec-char-dr-targets} \n\n")
-  if(nrow(cTargets)>0){ 
+for(i in 1:dcSettingCount){
+  if(dcSettingCount == 1){
+    # do not print the number for the setting as there is only 1
+    iVal <- ""
+  } else{
+    iVal <- i
+  }
+  if(i == dcSettingCount){
+      cat(paste0("\n\n#### Settings ",iVal," {#sec-char-dr-settings-end} \n\n"))
+  } else{
+      cat(paste0("\n\n#### Settings ",iVal," {#sec-char-dr-settings-",i,"} \n\n"))
+  }
+  cat(paste0("\n\n##### Targets {#sec-char-dr-targets-",i,"} \n\n"))
+  if(nrow(dc$popList[[i]])>0){ 
   cat('\n::: {.callout-important collapse="true"}')
   cat('\n# Targets used in dechallenge rechallenge\n')
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = cTargets %>%
+    table = dc$popList[[i]] %>%
       dplyr::arrange(.data$parentName,.data$cohortName), 
     groupBy = 'parentName', 
     elementId = 'dcrc-targets',
     groupByButton = TRUE,
-    columns = cColumns[names(cColumns) %in% colnames(cTargets)], 
+    columns = cColumns[names(cColumns) %in% colnames(dc$popList[[i]])], 
     caption = 'Target cohorts included in the analysis.'
     )))
    cat('\n:::\n')
    cat('\n\n')
   }
 
-  cat("\n#### Outcomes {#sec-char-dr-outcomes} \n")
-        if(nrow(cOutcomes)>0){ 
+  cat(paste0("\n##### Outcomes {#sec-char-dr-outcomes-",i,"} \n"))
+        if(nrow(dc$outcomeList[[i]])>0){ 
   cat('\n::: {.callout-important collapse="true"}')
   cat('\n# Outcomes used in dechallenge rechallenge \n')
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = cOutcomes %>%
+    table = dc$outcomeList[[i]] %>%
       dplyr::arrange(.data$parentName,.data$cohortName), 
     groupBy = 'parentName', 
     elementId = 'dcrc-outcomes',
     groupByButton = TRUE,
-    columns = cColumns[names(cColumns) %in% colnames(cOutcomes)], 
+    columns = cColumns[names(cColumns) %in% colnames(dc$outcomeList[[i]])], 
     caption = 'Outcome cohorts included in the analysis.'
     )))
    cat('\n:::\n')
    cat('\n\n')
       }
   
-cat("\n#### Parameters {#sec-dcrc-settings}\n", sep ='\n')
+cat(paste0("\n##### Parameters {#sec-dcrc-settings-",i,"}\n", sep ='\n'))
 
 setTable <- getSettingsTable(
   package = 'Characterization', 
   functionName = 'createDechallengeRechallengeSettings',
   settings = list(
-    dechallengeStopInterval = CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$dechallengeStopInterval,
-    dechallengeEvaluationWindow = CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings[[1]]$dechallengeEvaluationWindow
+    dechallengeStopInterval = dc$settingsList[[i]]$dechallengeStopInterval,
+    dechallengeEvaluationWindow = dc$settingsList[[i]]$dechallengeEvaluationWindow
   )
 )
 
@@ -428,6 +482,8 @@ setTable <- getSettingsTable(
       caption = 'Parameters for dechallenge rechallange'
     )))
     cat('\n:::\n')
+    
+}
     
 
 ```

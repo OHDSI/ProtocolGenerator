@@ -166,7 +166,7 @@ extractCohortMethodSettings <- function(
   # now process the negative list and excludeConcepts list
   commonExclude <- excludeConcepts[[1]]
   if(length(excludeConcepts) > 1){
-    if(commonExclude != -1){
+    if(commonExclude[1] != -1){ 
       for(ind in 2:length(excludeConcepts)){
         commonExclude <- intersect(excludeConcepts[[ind]],commonExclude) 
       }

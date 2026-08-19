@@ -3,6 +3,7 @@ title: "Study Protocol"
 date: today
 date-format: short
 title-block-banner: true
+number-sections: true
 format:
   html:
     toc: true

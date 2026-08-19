@@ -4,7 +4,7 @@ globalCharacterizationSettings <- function(
   
   txt <- paste0(
     'Only covariates that occur >= ',
-    CharacterizationModuleSettings$settings$minCharacterizationMean,
+     CharacterizationModuleSettings$settings$minCharacterizationMean,
     ' fraction of the population and >= ', 
     CharacterizationModuleSettings$settings$minCovariateCount,
     ' people are returned. ',
@@ -16,7 +16,19 @@ globalCharacterizationSettings <- function(
     CharacterizationModuleSettings$settings$outputTable,
     ' within the Strategus work schema.'
   )
-
+  
+  # add new variables if they are not NULL
+  tSize <- CharacterizationModuleSettings$settings$minTargetSize
+  cSize <- CharacterizationModuleSettings$settings$minCaseSize
+  
+  # Updates for Char v4 inputs
+  if(!is.null(tSize)){
+    txt <- paste0(txt, ' Only run risk factor/case series for study populations >= ', tSize, ' people.')
+  }
+  if(!is.null(tSize)){
+    txt <- paste0(txt, ' Only run risk factor/case series for cases (number of people with outcome) >= ', cSize, ' people.')
+  }
+  
    return(txt)
 }
 
@@ -45,28 +57,25 @@ processTargetBaseineSettings <- function(
   
   tbSpec <- CharacterizationModuleSettings$settings$analysis$targetBaselineSettings
   
+  # only non-NULL in v4 or higher
+  characterizationTargetLookup <- CharacterizationModuleSettings$settings$analysis$characterizationTargetLookup
+  
   if(is.null(tbSpec)){
     return(NULL)
   }
     
-  # get the unique covariate settings
-  covariateJson <- lapply(
-    X = tbSpec, 
-    FUN = function(x) ParallelLogger::convertSettingsToJson(x$covariateSettings)
+
+  # helper at bottom of file
+  targetPop <- getTargetPop(
+    spec = tbSpec, 
+    settingName = 'targetBaselineSettings',
+    characterizationTargetLookup = characterizationTargetLookup,
+    mapCovariates = TRUE, 
+    mapOutcomes = FALSE
   )
-  covariateJsonUnique <- unique(covariateJson)
   
-  # extract: target_id, limitToFirstInNDays, minPriorObservation, covariateSettingId
-  targetSettings <- do.call(rbind, lapply(
-    X = tbSpec, 
-    FUN = function(x) data.frame(
-      targetId = x$targetIds, 
-      limitToFirstInNDays = x$limitToFirstInNDays,
-      minPriorObservation = x$minPriorObservation,
-      covariateSettingId = match(ParallelLogger::convertSettingsToJson(x$covariateSettings),covariateJsonUnique)
-    )
-  )
-  )
+  targetSettings <-  targetPop$targetSettings
+  covariateJsonUnique  <- targetPop$covariateJsonUnique
   
   # create target table
   tempDf <- cohortDefinitionDf
@@ -98,93 +107,67 @@ processRiskFactorSettings <- function(
     ){
   
   rfSpec <- CharacterizationModuleSettings$settings$analysis$riskFactorSettings
+  # only non-NULL in v4 or higher
+  characterizationTargetLookup <- CharacterizationModuleSettings$settings$analysis$characterizationTargetLookup
+  
   
   if(is.null(rfSpec)){
     return(NULL)
   }
   
-  # get the unique covariate settings
-  covariateJsonUnique <- unique(lapply(
-    X = rfSpec, 
-    FUN = function(x) ParallelLogger::convertSettingsToJson(x$covariateSettings)
-  ))
+  # check whether the same targets are used in all settings
+  allTs <- getTargetPop(
+    spec = rfSpec, 
+    characterizationTargetLookup = characterizationTargetLookup, 
+    settingName = 'riskFactorSettings',
+    mapCovariates = FALSE,
+    mapOutcomes = FALSE
+  )$targetSettings
+  row.names(allTs) <- NULL
   
-  # get unique outcome sets
-  rfOutcomeList <- unique(lapply(
-    X = rfSpec, 
-    FUN = function(x) {
-      data.frame(
-        outcomeId = x$outcomeIds,
-        outcomeWashoutDays = x$outcomeWashoutDays,
-        tar = processTar(
-          riskWindowStart = x$riskWindowStart, 
-          startAnchor = x$startAnchor,
-          riskWindowEnd = x$riskWindowEnd, 
-          endAnchor = x$endAnchor
-        )
-      )
-    }))
+  firstTs <-  getTargetPop(
+    spec = list(rfSpec[[1]]), 
+    characterizationTargetLookup = characterizationTargetLookup, 
+    settingName = 'riskFactorSettings',
+    mapCovariates = FALSE,
+    mapOutcomes = FALSE
+  )$targetSettings
+  row.names(firstTs) <- NULL
   
-  # get unique target sets
-  rfTargetList <- unique(lapply(
-    X = rfSpec, 
-    FUN = function(x) {
-      data.frame(
-        targetId = x$targetIds, # need to account for multiple targetIds
-        limitToFirstInNDays = x$limitToFirstInNDays,
-        minPriorObservation = x$minPriorObservation
-      )
-    }
-  ))
+  singleTargetSet <- all.equal(allTs, firstTs)
   
-  if(length(rfTargetList) == 1){
+  if(singleTargetSet){
     # all outcomes by all targets 
-    rfTargetSettings <- unique(do.call(rbind, lapply(
-      X = rfSpec, 
-      FUN = function(x) {
-        
-        data.frame(
-          targetId = x$targetIds, # need to account for multiple targetIds
-          limitToFirstInNDays = x$limitToFirstInNDays,
-          minPriorObservation = x$minPriorObservation,
-          outcomeSet = 1,
-          covariateSettingId = match(ParallelLogger::convertSettingsToJson(x$covariateSettings),covariateJsonUnique)
-        )
-        
-      }
-    )
-    ))
+    targetPop <- getTargetPop(
+        spec = rfSpec, 
+        settingName = 'riskFactorSettings',
+        characterizationTargetLookup = characterizationTargetLookup,
+        mapCovariates = TRUE, 
+        mapOutcomes = TRUE
+      )
     
-    rfOutcomeList <- list(do.call(rbind, rfOutcomeList))
+    rfTargetSettings <-  unique(targetPop$targetSettings)
+    rfTargetSettings$outcomeSet <- 1
+    rfTargetSettings <-  unique(rfTargetSettings)
+    covariateJsonUnique  <- targetPop$covariateJsonUnique
+    rfOutcomeList <- targetPop$outcomeList
+  
+    rfOutcomeList <- list(unique(do.call(rbind, rfOutcomeList)))
     
   } else{
     
     # extract: target_id, limitToFirstInNDays, minPriorObservation, covariateSettingId
-    rfTargetSettings <- unique(do.call(rbind, lapply(
-      X = rfSpec, 
-      FUN = function(x) {
-        
-        data.frame(
-          targetId = x$targetIds, # need to account for multiple targetIds
-          limitToFirstInNDays = x$limitToFirstInNDays,
-          minPriorObservation = x$minPriorObservation,
-          outcomeSet = which(unlist(lapply(
-            X = rfOutcomeList,
-            FUN = function(y){identical(y, data.frame(outcomeId = x$outcomeIds,
-                                                      outcomeWashoutDays = x$outcomeWashoutDays,
-                                                      tar = processTar(
-                                                        riskWindowStart = x$riskWindowStart, 
-                                                        startAnchor = x$startAnchor,
-                                                        riskWindowEnd = x$riskWindowEnd, 
-                                                        endAnchor = x$endAnchor
-                                                      )))}
-          ))),
-          covariateSettingId = match(ParallelLogger::convertSettingsToJson(x$covariateSettings),covariateJsonUnique)
-        )
-        
-      }
+    targetPop <- getTargetPop(
+      spec = rfSpec, 
+      settingName = 'riskFactorSettings',
+      characterizationTargetLookup = characterizationTargetLookup,
+      mapCovariates = TRUE, 
+      mapOutcomes = TRUE
     )
-    ))
+    rfTargetSettings <- targetPop$targetSettings
+    covariateJsonUnique  <- targetPop$covariateJsonUnique
+    rfOutcomeList <- targetPop$outcomeList
+    
   }
   
   # create table
@@ -238,108 +221,67 @@ processCaseSeriesSettings <- function(
     ){
   
   csSpec <- CharacterizationModuleSettings$settings$analysis$caseSeriesSettings
+  characterizationTargetLookup <- CharacterizationModuleSettings$settings$analysis$characterizationTargetLookup
   
   if(is.null(csSpec)){
     return(NULL)
   }
   
-  # get the unique covariate settings
-  settingsJsonUnique <- unique(lapply(
-    X = csSpec, 
-    FUN = function(x) ParallelLogger::convertSettingsToJson(
-      list(
-        caseCovariateSettings = x$caseCovariateSettings, 
-        casePreTargetDuration = x$casePreTargetDuration,
-        casePostOutcomeDuration = x$casePostOutcomeDuration
-      )
-    )
-  ))
+  # check whether the same targets are used in all settings
+  allTs <- getTargetPop(
+    spec = csSpec, 
+    characterizationTargetLookup = characterizationTargetLookup, 
+    settingName = 'caseSeriesSettings',
+    mapCovariates = FALSE,
+    mapOutcomes = FALSE
+  )$targetSettings
+  row.names(allTs) <- NULL
   
-  # get unique outcome sets
-  csOutcomeList <- unique(lapply(
-    X = csSpec, 
-    FUN = function(x) {
-      data.frame(
-        outcomeId = x$outcomeIds,
-        outcomeWashoutDays = x$outcomeWashoutDays,
-        tar = processTar(
-          riskWindowStart = x$riskWindowStart, 
-          startAnchor = x$startAnchor,
-          riskWindowEnd = x$riskWindowEnd, 
-          endAnchor = x$endAnchor
-        )
-      )
-    }))
+  firstTs <-  getTargetPop(
+    spec = list(csSpec[[1]]), 
+    characterizationTargetLookup = characterizationTargetLookup, 
+    settingName = 'caseSeriesSettings',
+    mapCovariates = FALSE,
+    mapOutcomes = FALSE
+  )$targetSettings
+  row.names(firstTs) <- NULL
   
-  # get unique target sets
-  csTargetList <- unique(lapply(
-    X = csSpec, 
-    FUN = function(x) {
-      data.frame(
-        targetId = x$targetIds, # need to account for multiple targetIds
-        limitToFirstInNDays = x$limitToFirstInNDays,
-        minPriorObservation = x$minPriorObservation
-      )
-    }
-  ))
+  singleTargetSet <- all.equal(allTs, firstTs)
   
-  # extract: target_id, limitToFirstInNDays, minPriorObservation, covariateSettingId
-  if(length(csTargetList) == 1){
+  if(singleTargetSet){
     # all outcomes by all targets 
-    csTargetSettings <- unique(do.call(rbind, lapply(
-      X = csSpec, 
-      FUN = function(x) {
-        
-        data.frame(
-          targetId = x$targetIds, # need to account for multiple targetIds
-          limitToFirstInNDays = x$limitToFirstInNDays,
-          minPriorObservation = x$minPriorObservation,
-          outcomeSet = 1,
-          settingId = match(ParallelLogger::convertSettingsToJson(list(
-            caseCovariateSettings = x$caseCovariateSettings, 
-            casePreTargetDuration = x$casePreTargetDuration,
-            casePostOutcomeDuration = x$casePostOutcomeDuration
-          )), settingsJsonUnique)
-        )
-        
-      }
+    targetPop <- getTargetPop(
+      spec = csSpec, 
+      settingName = 'caseSeriesSettings',
+      characterizationTargetLookup = characterizationTargetLookup,
+      mapCovariates = FALSE, 
+      mapOutcomes = TRUE,
+      mapCaseSeries = TRUE
     )
-    ))
     
-    csOutcomeList <- list(do.call(rbind, csOutcomeList))
+    csTargetSettings <-  unique(targetPop$targetSettings)
+    csTargetSettings$outcomeSet <- 1
+    csTargetSettings <-  unique(csTargetSettings)
+    settingsJsonUnique  <- targetPop$caseJsonUnique
+    csOutcomeList <- targetPop$outcomeList
+    
+    csOutcomeList <- list(unique(do.call(rbind, csOutcomeList)))
     
   } else{
     
     # extract: target_id, limitToFirstInNDays, minPriorObservation, covariateSettingId
-    csTargetSettings <- unique(do.call(rbind, lapply(
-      X = csSpec, 
-      FUN = function(x) {
-        
-        data.frame(
-          targetId = x$targetIds, # need to account for multiple targetIds
-          limitToFirstInNDays = x$limitToFirstInNDays,
-          minPriorObservation = x$minPriorObservation,
-          outcomeSet = which(unlist(lapply(
-            X = csOutcomeList,
-            FUN = function(y){identical(y, data.frame(outcomeId = x$outcomeIds,
-                                                      outcomeWashoutDays = x$outcomeWashoutDays,
-                                                      tar = processTar(
-                                                        riskWindowStart = x$riskWindowStart, 
-                                                        startAnchor = x$startAnchor,
-                                                        riskWindowEnd = x$riskWindowEnd, 
-                                                        endAnchor = x$endAnchor
-                                                      )))}
-          ))),
-          settingId = match(ParallelLogger::convertSettingsToJson(list(
-            caseCovariateSettings = x$caseCovariateSettings, 
-            casePreTargetDuration = x$casePreTargetDuration,
-            casePostOutcomeDuration = x$casePostOutcomeDuration
-          )), settingsJsonUnique)
-        )
-        
-      }
+    targetPop <- getTargetPop(
+      spec = csSpec, 
+      settingName = 'caseSeriesSettings',
+      characterizationTargetLookup = characterizationTargetLookup,
+      mapCovariates = FALSE, 
+      mapOutcomes = TRUE,
+      mapCaseSeries = TRUE
     )
-    ))
+    csTargetSettings <- targetPop$targetSettings
+    settingsJsonUnique  <- targetPop$caseJsonUnique
+    csOutcomeList <- targetPop$outcomeList
+    
   }
   
   # create table
@@ -386,6 +328,135 @@ processCaseSeriesSettings <- function(
 }
 
 
+
+# Time-to-event
+processTimeToEventSettings <- function(
+    CharacterizationModuleSettings,
+    cohortDefinitionDf # process cohortDefinition 
+){
+  
+  tteSpec <- CharacterizationModuleSettings$settings$analysis$timeToEventSettings
+  
+  # only non-NULL in v4 or higher
+  characterizationTargetLookup <- CharacterizationModuleSettings$settings$analysis$characterizationTargetLookup
+  
+  if(is.null(tteSpec)){
+    return(NULL)
+  }
+  
+  # work for earlier versions and v4
+  if(is.null(characterizationTargetLookup)){
+    
+    popList <- lapply(
+      X = tteSpec, 
+      FUN = function(x){
+        cohortDefinitionDf[cohortDefinitionDf$cohortId %in% x$targetIds, ]
+        }
+    )
+    
+  } else{
+    
+    popList <- lapply(
+      X = tteSpec, 
+      FUN = function(x){
+        merge(
+          cohortDefinitionDf,
+          characterizationTargetLookup %>%
+            dplyr::filter(.data$timeToEventSettings == 1) %>%
+            dplyr::select(!dplyr::any_of(c("timeToEventSettings", "dechallengeRechallengeSettings", "targetBaselineSettings", "riskFactorSettings", "caseSeriesSettings"))),
+          by.x = 'cohortId', 
+          by.y = 'targetId'
+        )
+      }
+    )
+    
+  }
+  
+  outcomeList <- lapply(
+    X = tteSpec, 
+    FUN = function(x){cohortDefinitionDf[cohortDefinitionDf$cohortId %in% x$outcomeIds,]}
+  )
+  
+  return(
+    list(
+      popList = popList,
+      outcomeList = outcomeList
+    )
+  )
+  
+}
+
+#=====================
+# Dechal-rechal
+#=====================
+processDechalSettings <- function(
+    CharacterizationModuleSettings,
+    cohortDefinitionDf # process cohortDefinition 
+){
+  
+  dcSpec <- CharacterizationModuleSettings$settings$analysis$dechallengeRechallengeSettings
+  
+  # only non-NULL in v4 or higher
+  characterizationTargetLookup <- CharacterizationModuleSettings$settings$analysis$characterizationTargetLookup
+  
+  if(is.null(dcSpec)){
+    return(NULL)
+  }
+  
+  settingsList <- lapply(
+    X = dcSpec, 
+    FUN = function(x){list(
+      dechallengeStopInterval = x$dechallengeStopInterval,
+      dechallengeEvaluationWindow = x$dechallengeEvaluationWindow
+      )}
+  )
+  
+  # work for earlier versions and v4
+  if(is.null(characterizationTargetLookup)){
+    
+    popList <- lapply(
+      X = dcSpec, 
+      FUN = function(x){
+        cohortDefinitionDf[cohortDefinitionDf$cohortId %in% x$targetCohortDefinitionIds, ]
+      }
+    )
+    
+  } else{
+    
+    popList <- lapply(
+      X = dcSpec, 
+      FUN = function(x){
+        merge(
+          cohortDefinitionDf,
+          characterizationTargetLookup %>%
+            dplyr::filter(.data$dechallengeRechallengeSettings == 1) %>%
+            dplyr::select(!dplyr::any_of(c("timeToEventSettings", "dechallengeRechallengeSettings", "targetBaselineSettings", "riskFactorSettings", "caseSeriesSettings"))),
+          by.x = 'cohortId', 
+          by.y = 'targetId'
+        )
+      }
+    )
+    
+  }
+  
+  outcomeList <- lapply(
+    X = dcSpec, 
+    FUN = function(x){cohortDefinitionDf[cohortDefinitionDf$cohortId %in% c(x$outcomeIds,x$outcomeCohortDefinitionIds),]}
+  )
+  
+  return(
+    list(
+      popList = popList,
+      outcomeList = outcomeList,
+      settingsList = settingsList
+    )
+  )
+  
+}
+
+#=====================
+# Col def helpers
+#=====================
 characterizationColDef <- function(){
   res <- list(
     subsetIdTarget = reactable::colDef(show = FALSE),
@@ -546,4 +617,172 @@ characterizationColDef <- function(){
   )
   
   return(res)
+}
+
+
+
+
+
+# helper 
+getTargetPop <- function(
+    spec, 
+    characterizationTargetLookup, 
+    settingName = 'targetBaselineSettings',
+    mapCovariates = FALSE,
+    mapOutcomes = FALSE,
+    mapCaseSeries = FALSE
+    
+    ){
+  
+  if(mapCovariates){
+    # get the unique covariate settings
+    covariateJson <- lapply(
+      X = spec, 
+      FUN = function(x) ParallelLogger::convertSettingsToJson(x$covariateSettings)
+    )
+    covariateJsonUnique <- unique(covariateJson)
+  } else{
+    covariateJsonUnique <- NULL
+  }
+  
+  if(mapOutcomes){
+    
+    outcomeList <- unique(lapply(
+      X = spec, 
+      FUN = function(x) {
+        data.frame(
+          outcomeId = x$outcomeIds,
+          outcomeWashoutDays = x$outcomeWashoutDays,
+          tar = processTar(
+            riskWindowStart = x$riskWindowStart, 
+            startAnchor = x$startAnchor,
+            riskWindowEnd = x$riskWindowEnd, 
+            endAnchor = x$endAnchor
+          )
+        )
+      }))
+    
+  } else{
+    outcomeList = NULL
+  }
+  
+  
+  if(mapCaseSeries){
+    caseJsonUnique<- unique(lapply(
+      X = spec, 
+      FUN = function(x) ParallelLogger::convertSettingsToJson(
+        list(
+          caseCovariateSettings = x$caseCovariateSettings, 
+          casePreTargetDuration = x$casePreTargetDuration,
+          casePostOutcomeDuration = x$casePostOutcomeDuration
+        )
+      )
+    ))
+  } else{
+    caseJsonUnique <- NULL
+  }
+  
+if(is.null(spec[[1]]$characterizationTargetIds)){
+  # Spec prior to v4 char
+  # extract: target_id, limitToFirstInNDays, minPriorObservation, covariateSettingId
+  targetSettings <- do.call(rbind, lapply(
+    X = spec, 
+    FUN = function(x){
+      temp <- data.frame(
+        targetId = x$targetIds, 
+        limitToFirstInNDays = x$limitToFirstInNDays,
+        minPriorObservation = x$minPriorObservation
+      )
+    if(mapCovariates){
+      temp$covariateSettingId = match(ParallelLogger::convertSettingsToJson(x$covariateSettings),covariateJsonUnique)
+    }
+    
+    if(mapOutcomes){
+      temp$outcomeSet = which(unlist(lapply(
+        X = outcomeList,
+        FUN = function(y){identical(y, data.frame(outcomeId = x$outcomeIds,
+                                                  outcomeWashoutDays = x$outcomeWashoutDays,
+                                                  tar = processTar(
+                                                    riskWindowStart = x$riskWindowStart, 
+                                                    startAnchor = x$startAnchor,
+                                                    riskWindowEnd = x$riskWindowEnd, 
+                                                    endAnchor = x$endAnchor
+                                                  )))}
+      )))
+    }  
+      
+      if(mapCaseSeries){
+        temp$settingId = match(ParallelLogger::convertSettingsToJson(
+          list(
+            caseCovariateSettings = x$caseCovariateSettings, 
+            casePreTargetDuration = x$casePreTargetDuration,
+            casePostOutcomeDuration = x$casePostOutcomeDuration
+          )
+        ),caseJsonUnique)
+      }
+      
+      return(temp)
+    }
+  )
+  )} else{
+    
+    # v4 char
+    targetSettings <- do.call(rbind, lapply(
+      X = spec, 
+      FUN = function(x){
+        temp <- data.frame(
+          characterizationTargetId = x$characterizationTargetIds
+        )
+        if(mapCovariates){
+          temp$covariateSettingId = match(ParallelLogger::convertSettingsToJson(x$covariateSettings),covariateJsonUnique)
+        }
+        if(mapOutcomes){
+          temp$outcomeSet = which(unlist(lapply(
+            X = outcomeList,
+            FUN = function(y){identical(y, data.frame(outcomeId = x$outcomeIds,
+                                                      outcomeWashoutDays = x$outcomeWashoutDays,
+                                                      tar = processTar(
+                                                        riskWindowStart = x$riskWindowStart, 
+                                                        startAnchor = x$startAnchor,
+                                                        riskWindowEnd = x$riskWindowEnd, 
+                                                        endAnchor = x$endAnchor
+                                                      )))}
+          )))
+        } 
+        
+        if(mapCaseSeries){
+          temp$settingId = match(ParallelLogger::convertSettingsToJson(
+            list(
+              caseCovariateSettings = x$caseCovariateSettings, 
+              casePreTargetDuration = x$casePreTargetDuration,
+              casePostOutcomeDuration = x$casePostOutcomeDuration
+            )
+          ),caseJsonUnique)
+        }
+        
+        return(temp)
+      }
+    ))
+    
+    
+    # need to join only studyPops
+    targetSettings <- merge(targetSettings, characterizationTargetLookup, by = 'characterizationTargetId')
+    
+    targetSettings$settings <- targetSettings[,settingName]
+    
+    # filter to targetBaselineSettings == 1 and remove timeToEventSettings dechallengeRechallengeSettings targetBaselineSettings riskFactorSettings caseSeriesSettings
+    targetSettings <- targetSettings %>%
+      dplyr::filter(.data$settings == 1) %>%
+      dplyr::select(!dplyr::any_of(c("settings","timeToEventSettings", "dechallengeRechallengeSettings", "targetBaselineSettings", "riskFactorSettings", "caseSeriesSettings")))
+    
+  }
+  
+  return(
+    list(
+      targetSettings = unique(targetSettings),
+      covariateJsonUnique = covariateJsonUnique,
+      outcomeList = outcomeList,
+      caseJsonUnique = caseJsonUnique
+    )
+  )
 }
