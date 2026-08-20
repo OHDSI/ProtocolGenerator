@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/OHDSI/ProtocolGenerator/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/OHDSI/ProtocolGenerator/blob/v1.0.1/DESCRIPTION)
 
 Reps J (2026). *ProtocolGenerator: Generate HTML OHDSI study protocols*.
 R package version 1.0.1, <https://ohdsi.github.io/ProtocolGenerator>.
