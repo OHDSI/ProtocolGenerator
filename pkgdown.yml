@@ -1,0 +1,6 @@
+pandoc: 3.8.3
+pkgdown: 2.2.1
+pkgdown_sha: ~
+articles:
+  ProtocolGenerator: ProtocolGenerator.html
+last_built: 2026-08-20T14:23Z
