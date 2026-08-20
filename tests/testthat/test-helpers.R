@@ -9,11 +9,16 @@ test_that("getCohortDefinitionsFromJson", {
   
   cohortDef <- getCohortDefinitionsFromJson(json)
   testthat::expect_true("cohortDefinitions" %in% names(cohortDef))
+  testthat::expect_true("subsetUnique" %in% names(cohortDef))
+  testthat::expect_true("cohortDefinitionDf" %in% names(cohortDef))
   
-  testthat::expect_equal(
-    length(cohortDef$cohortNames), 
-    length(cohortDef$cohortDefinitions)
-  )
+  testthat::expect_true(nrow(cohortDef$cohortDefinitionDf) > 0)
+  
+  testthat::expect_true("cohortName" %in% colnames(cohortDef$cohortDefinitionDf))
+  testthat::expect_true("cohortNameWithLink" %in% colnames(cohortDef$cohortDefinitionDf))
+  testthat::expect_true("cohortId" %in% colnames(cohortDef$cohortDefinitionDf))
+  testthat::expect_true("parentId" %in% colnames(cohortDef$cohortDefinitionDf))
+  testthat::expect_true("parentName" %in% colnames(cohortDef$cohortDefinitionDf))
   
 })
 
@@ -37,7 +42,7 @@ test_that("getFunctionFromArgName", {
     argumentName = 'createPsArgs'
   )
   
-  testthat::expect_equal(fun, 'createPs')
+  testthat::expect_equal(fun, 'createCreatePsArgs')
   
 })
 

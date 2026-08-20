@@ -9,7 +9,7 @@ output: html_document
 if(params$addCohortDefinitions){
   
   # how to arrange the cohorts?
-  parentCohortsInd <- which(cohortDefintionDf$isParent)
+  parentCohortsInd <- which(cohortDefinitionDf$isParent)
   # order this by cohortName
   names <- unlist(lapply(parentCohortsInd, function(i){cohortDefinitions[[i]]$cohortName}))
   parentCohortsInd <- parentCohortsInd[order(names)]
@@ -30,16 +30,16 @@ for(i in parentCohortsInd){
 
   if(F){
 # Then display the subset logic with link to subsetDef section containing subsetUnique
-  subCohortInds <- setdiff(which(cohortDefintionDf$parentId == cohortDefinitions[[i]]$cohortId), i)
+  subCohortInds <- setdiff(which(cohortDefinitionDf$parentId == cohortDefinitions[[i]]$cohortId), i)
   
   if(length(subCohortInds) >0){
     
   # order the subCohorts
-  subnames <- cohortDefintionDf$cohortName[subCohortInds]
+  subnames <- cohortDefinitionDf$cohortName[subCohortInds]
   subCohortInds <- subCohortInds[order(subnames)]
     
   for(subInd in subCohortInds){
-    cat('\n#### ', cohortDefintionDf$cohortName[subInd], paste0('{#cohort-',cohortDefintionDf$cohortId[subInd],'}\n'),'')
+    cat('\n#### ', cohortDefinitionDf$cohortName[subInd], paste0('{#cohort-',cohortDefinitionDf$cohortId[subInd],'}\n'),'')
   cat('\n\n::: {.callout-important collapse="true"}\n')
   cat('## Subset Definition\n\n')
  
@@ -64,9 +64,8 @@ for(i in parentCohortsInd){
 ```
 
 ```{r echo=FALSE, results='asis'}
-
 # if there are subsets add them here
-if(!is.null(subsetDefs)){
+if(!is.null(subsetUnique)){
 cat('\n\n## Subsets \n')
   
   for(i in 1:length(subsetUnique)){
@@ -76,7 +75,7 @@ cat('\n\n## Subsets \n')
   cat(paste0('## ',subsetUnique[[i]]$subsetType,'\n\n'))
      print(shiny::tagList(reactable::reactable(
       data = t(as.data.frame(subsetUnique[[i]])), 
-      striped = T
+      striped = TRUE
     )))
      cat('\n\n:::\n\n')
   }

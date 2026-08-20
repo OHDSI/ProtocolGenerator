@@ -4,133 +4,72 @@ output: html_document
 
 ```{r, echo=FALSE, results = 'asis', include=FALSE}
 
-cohortIdsCD <- CohortDiagnosticsSettings$cohortIds
-# if null then cohort diagnotics is applied to all cohorts in set
-if(is.null(cohortIdsCD)){
-  cohortIdsCD <- cohortDefintionDf$cohortId
-}
-
-# this should be a single settings rather than a list of settings
-temporalCovariateSettingsCD <- CohortDiagnosticsSettings$temporalCovariateSettings
-cdFeatureSettings <- data.frame(
-  input = names(temporalCovariateSettingsCD),
-  value = unlist(lapply(temporalCovariateSettingsCD, FUN = function(x) ifelse(is.null(x), 'NULL', as.character(x))))
-)
-rownames(cdFeatureSettings) <- NULL
-
-# non list settings
-cdSettings <- CohortDiagnosticsSettings
-cdSettings$cohortIds <- NULL
-cdSettings$temporalCovariateSettings <- NULL
-
-cdSettings <- data.frame(
-  input = names(cdSettings),
-  value = unlist(lapply(cdSettings, FUN = function(x) ifelse(is.null(x), 'NULL', as.character(x))))
+cdTables <- ProtocolGenerator::getCohortDiagnosticTables(
+  CohortDiagnosticsSettings = CohortDiagnosticsSettings,
+  cohortDefinitionDf = cohortDefinitionDf
 )
 
-rownames(cdSettings) <- NULL
-  
-# create target table
-targetDfCD <- cohortDefintionDf
-colnames(targetDfCD) <- paste0(colnames(targetDfCD), 'Target')
-targetDfCD <- targetDfCD[targetDfCD$cohortIdTarget %in% cohortIdsCD, ]
-
-# order the columns
-targetDfCD <- targetDfCD  %>% 
-  dplyr::relocate("cohortNameTarget") %>% 
-  dplyr::relocate("parentNameTarget") 
-
-cdColumns <- list(
-      subsetIdTarget = reactable::colDef(show = F),
-      isParentTarget = reactable::colDef(show = F),
-      parentIdTarget = reactable::colDef(show = F),
-      subsetNameTarget = reactable::colDef(show = F),
-      packageVersionTarget = reactable::colDef(show = F),
-      numberSubsetOperatorsTarget = reactable::colDef(show = F),
-      cohortIdTarget = reactable::colDef(show = F),
-
-      parentNameTarget = reactable::colDef(
-        name = 'Parent Target', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300,
-        html = TRUE
-      ),
-
-      cohortNameTarget = reactable::colDef(
-        aggregate = "unique",
-        show = TRUE,
-        name = 'Target', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300
-        ),
-      cohortNameWithLinkTarget = reactable::colDef(
-        show = FALSE,
-        name = 'Cohort', 
-        defaultSortOrder = 'asc',
-        sortNALast = TRUE,
-        filterable = TRUE, 
-        minWidth = 300,
-        html = TRUE
-      ),
-      subsetCohortsTarget = reactable::colDef(
-        html = TRUE,
-        aggregate = "count"
-        ),
-      appliedSubsetsTarget = reactable::colDef(
-        html = TRUE,
-        aggregate = "count"
-        )
-    )
-
+cdColumns <- ProtocolGenerator::getCdCols()
 
 ```
 
 ## Cohort Diagnostics
 
+::: {.callout-important collapse="false"}
+# Summary of cohort diagnostics
 Cohort diagnostics is used to evaluate phenotypes. See [here](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0310634) for more details.
+
+Cohort diagnostics is a set of automated checks that summarizes who a phenotype algorithm selects as having a medical condition or drug exposure (their age, sex, diagnoses, tests, and treatments). It helps researchers spot mistakes or unexpected results so they can be confident the people included in a cohort really match the condition or drug being studied.
+
+:::
 
 ### Cohorts
 
-Cohort diagnostics will be run for the following `r nrow(targetDfCD)` cohorts:
+::: {.callout-important collapse="true"}
+# Cohorts used in cohort diagnostics
+Cohort diagnostics will be run for the following `r nrow(cdTables$targetTable)` cohorts:
 
 ```{r, echo=FALSE, results = 'asis'}
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = targetDfCD %>%
+    table = cdTables$targetTable %>%
       dplyr::arrange(.data$parentNameTarget,.data$cohortNameTarget), 
     groupBy = 'parentNameTarget', 
-    columns = cdColumns[names(cdColumns) %in% colnames(targetDfCD)], 
+    groupByButton = TRUE, 
+    elementId = 'cd-cohorts',
+    columns = cdColumns[names(cdColumns) %in% colnames(cdTables$targetTable)], 
     caption = 'Cohorts included in Cohort Diagnostics.'
     )))
 ```
-
+:::
 
 ### Settings
 
+::: {.callout-important collapse="true"}
+# Main settings
 The following cohort diagnostic settings are used:
 
 ```{r, echo=FALSE, results = 'asis'}
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = cdSettings, 
+    table = cdTables$settingsTable, 
     caption = 'Settings.'
     )))
 ```
- 
-and the temporal feature settings:
+:::
+
+::: {.callout-important collapse="true"}
+# Temporal feature settings:
 
 ```{r, echo=FALSE, results = 'asis'}
  print(shiny::tagList(
    ProtocolGenerator::reportTableFormat(
-    table = cdFeatureSettings, 
+    table = cdTables$featureTable, 
     caption = 'Feature Settings.'
     )))
 ```
- 
+
+::: 
 
 
 ```{r cd_cohort_tracker, echo=FALSE, results = 'asis',include=FALSE}
@@ -138,14 +77,14 @@ and the temporal feature settings:
 # code to get the targets for cd
 # and add to the cohortTracker
 
-if(length(cohortIdsCD) > 0 ){
+if(length(cdTables$targetTable$cohortId) > 0 ){
 cohortTracker <- rbind(
   cohortTracker,
   data.frame(
   type = c(
-    rep('cdTarget', length(unique(cohortIdsCD)))
+    rep('cdTarget', length(unique(cdTables$targetTable$cohortId)))
     ),
-  cohortId = unique(cohortIdsCD),
+  cohortId = unique(cdTables$targetTable$cohortId),
   value = 1
   )
 )

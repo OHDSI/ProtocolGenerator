@@ -22,3 +22,13 @@ had no name shown
 \details{
 Returns a reactable colunn definition
 }
+\seealso{
+Other ColDefs:
+\code{\link[=cmColDef]{cmColDef()}},
+\code{\link[=cmOutcomeColDef]{cmOutcomeColDef()}},
+\code{\link[=getCIcolumns]{getCIcolumns()}},
+\code{\link[=getCdCols]{getCdCols()}},
+\code{\link[=getPlpColDefs]{getPlpColDefs()}},
+\code{\link[=getSccsColDefs]{getSccsColDefs()}}
+}
+\concept{ColDefs}

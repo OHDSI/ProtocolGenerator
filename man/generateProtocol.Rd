@@ -20,7 +20,10 @@ generateProtocol(
   conceptsAsExcel = FALSE,
   conceptFolder = outputLocation,
   addCohortDefinitions = TRUE,
-  exportCohortLocation = NULL
+  exportCohortLocation = NULL,
+  headerColor = "#336B91",
+  headerLogoLocation = NULL,
+  protocolSubheading = NULL
 )
 }
 \arguments{
@@ -53,6 +56,12 @@ generateProtocol(
 \item{addCohortDefinitions}{Whether to add the cohorts to the protocol (can make document large)}
 
 \item{exportCohortLocation}{if not NULL the location where the table tracter will be exported to csv.}
+
+\item{headerColor}{The CSS color to use for the protocol header banner (optional)}
+
+\item{headerLogoLocation}{The location of a logo image to add to the protocol header banner (optional)}
+
+\item{protocolSubheading}{Optional subheading to show under the protocol title}
 }
 \value{
 An named R list with the elements 'standard' and 'source'
@@ -65,3 +74,4 @@ Specify the location of the json specification file, the data diagnostic folder 
 the ATLAS webAPI (to process cohorts and concepts) and where you want the
 protocol saved.
 }
+\concept{Generate}

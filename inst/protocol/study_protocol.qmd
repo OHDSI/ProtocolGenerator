@@ -1,8 +1,7 @@
 ---
 title: "Study Protocol"
-date: today
-date-format: short
 title-block-banner: true
+number-sections: true
 format:
   html:
     toc: true
@@ -23,6 +22,9 @@ params:
   webApiUsername: NULL 
   webApiPassword: NULL
   exportCohortLocation: NULL
+  headerColor: "#336B91"
+  headerLogoLocation: NULL
+  protocolSubheading: NULL
 ---
 
 ```{r cohort_extraction, echo=FALSE, hide = TRUE, include=FALSE}
@@ -32,129 +34,109 @@ cohortTracker <- c() # this will add cohorts used in the spec
 json <- ParallelLogger::loadSettingsFromJson(params$jsonLocation)
 modulesInJson <- unlist(lapply(json$moduleSpecifications, function(x) x$module))
 
-# need to finish this function below...
+# this function processes the json cohort def to get the cohort details 
 cohortDetails <- ProtocolGenerator::getCohortDefinitionsFromJson(json)
-
 cohortDefinitions <- cohortDetails$cohortDefinitions
-cohortIds <- cohortDetails$cohortIds
-cohortNames <- cohortDetails$cohortNames
-cohortNamesLink <- paste0(cohortNames, ' <a href="#cohort-',cohortIds,'">View</a>')
-#cohortNamesLink <- paste0(cohortNames, ' (@cohort-',cohortIds, ')')
+subsetUnique <- cohortDetails$subsetUnique
+cohortDefinitionDf <- cohortDetails$cohortDefinitionDf
 
-subsetIds <- unlist(lapply(cohortDefinitions, function(x){
-  if(!is.null(x$subsetDefinition)){
-    ParallelLogger::convertJsonToSettings(x$subsetDefinition)$definitionId
-  } else{
-  return(-1)
-}
-}))
+negativeControls <- ProtocolGenerator::getNegativeControlsFromJson(json)
 
-cohortDefintionDf <- data.frame(
-  cohortName = cohortNames,
-  cohortNameWithLink = cohortNamesLink,
-  cohortId = cohortIds,
-  subsetId = subsetIds,
-  isParent = subsetIds == -1,
-  parentId = cohortIds,
-  parentName = cohortNames
+```
+
+```{r protocol_header_style, echo=FALSE, results='asis'}
+headerStyles <- c()
+headerBackgroundImages <- c("linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(0, 0, 0, 0.16))")
+headerBackgroundRepeats <- c("no-repeat")
+headerBackgroundPositions <- c("center")
+headerBackgroundSizes <- c("cover")
+headerColor <- params$headerColor
+headerLogoLocation <- params$headerLogoLocation
+protocolSubheading <- params$protocolSubheading
+protocolDate <- paste0("PUBLISHED ",
+  as.integer(format(Sys.Date(), "%m")), "/",
+  as.integer(format(Sys.Date(), "%d")), "/",
+  format(Sys.Date(), "%y")
 )
-cohortDefintionDf$parentId[!cohortDefintionDf$isParent] <- (cohortDefintionDf$cohortId - cohortDefintionDf$subsetId)[!cohortDefintionDf$isParent]/1000
-cohortDefintionDf$parentName <- sapply(cohortDefintionDf$parentId, function(x){
-  paste0(cohortNames[which(x == cohortIds)], ' <a href="#cohort-',x,'">View</a>')
-  }
-  )
-  
-# =========== SUBSETS ============
-#==================================
-subsetDefs <- cohortDetails$subSetDefs
-if(!is.null(subsetDefs)){
-subsetDefs <- lapply(subsetDefs$json, function(x) ParallelLogger::convertJsonToSettings(x))
 
-subsetOps <- lapply(subsetDefs, function(x){
-  x$subsetOperators
-})
-
-# remove name and extract cohortIds when subsetType == "CohortSubsetOperator"
-subsetUnique <- subsetOps
-subsetUniqueAppend <- list()
-for(sind in 1:length(subsetUnique)){
-  for(sind2 in 1:length(subsetUnique[[sind]])){
-    subsetUnique[[sind]][[sind2]]$name <- NULL 
-    if(subsetUnique[[sind]][[sind2]]$subsetType == 'CohortSubsetOperator'){
-      subsetUnique[[sind]][[sind2]]$cohortIds <- NULL
-    }
+if (!is.null(headerColor) && nzchar(headerColor)) {
+  if (grepl("^[#A-Za-z0-9(),.%[:space:]-]+$", headerColor) && !grepl("[;{}<>]", headerColor)) {
+    headerStyles <- c(headerStyles, sprintf("background-color: %s !important;", headerColor))
+  } else {
+    warning("Ignoring headerColor because it is not a valid CSS color value.")
   }
-  subsetUniqueAppend <- append(subsetUniqueAppend,subsetUnique[[sind]])
 }
-subsetUnique <- unique(subsetUniqueAppend)
 
-# now extract into a data.frame and find out which subsets were used
-# get subsetId cohorts 
-
-subsetDetails <- do.call('rbind', lapply(subsetDefs, function(x){
-  data.frame(
-    subsetName = x$name,
-    subsetId = x$definitionId,
-    packageVersion = x$packageVersion,
-    #identifierExpression = x$identifierExpression,
-    #operatorNameConcatString = x$operatorNameConcatString,
-    #subsetCohortNameTemplate = x$subsetCohortNameTemplate,
-    numberSubsetOperators = length(x$subsetOperators)
-  )
-}))
-
-# add CohortSubsetOperator subset cohorts
-subsetDetails$subsetCohorts <- unlist(lapply(subsetOps, function(x){
-  paste(unlist(lapply(x, function(y){
-    if(y$subsetType == 'CohortSubsetOperator'){
-      if(y$negate == FALSE){
-        
-        ytemp <- y
-        ytemp$name <- NULL
-        ytemp$cohortIds <- NULL
-        subsetInd <- which(unlist(lapply(subsetUnique, function(x) identical(ytemp, x))))
-        
-        # add cohort link below
-        return(paste0("<a href='#cohort-",y$cohortIds,"'> View Cohort</a> <a href='#subset-",subsetInd,"'> View Subset</a>"))
-      }
-    } 
-    return(NULL)
+if (!is.null(headerLogoLocation) && nzchar(headerLogoLocation)) {
+  if (file.exists(headerLogoLocation)) {
+    logoUri <- knitr::image_uri(headerLogoLocation)
+    headerBackgroundImages <- c(sprintf('url("%s")', logoUri), headerBackgroundImages)
+    headerBackgroundRepeats <- c("no-repeat", headerBackgroundRepeats)
+    headerBackgroundPositions <- c("right 2rem center", headerBackgroundPositions)
+    headerBackgroundSizes <- c("auto min(5rem, 70%)", headerBackgroundSizes)
+    headerStyles <- c(headerStyles, "padding-right: 10rem;")
+  } else {
+    warning(sprintf("Ignoring headerLogoLocation because the file does not exist: %s", headerLogoLocation))
   }
-         )), collapse = ',')
-}))
+}
 
-subsetDetails$appliedSubsets <- unlist(lapply(subsetOps, function(x){
-  paste(unlist(lapply(x, function(y){
-        ytemp <- y
-        ytemp$name <- NULL
-        ytemp$cohortIds <- NULL
-        subsetInd <- which(unlist(lapply(subsetUnique, function(x) identical(ytemp, x))))
-        return(paste0("<a href='#subset-",subsetInd,"'> View Subset</a>" ))
-    }
-    )), collapse = ',')
-}))
+headerStyles <- c(
+  headerStyles,
+  sprintf("background-image: %s;", paste(headerBackgroundImages, collapse = ", ")),
+  sprintf("background-repeat: %s;", paste(headerBackgroundRepeats, collapse = ", ")),
+  sprintf("background-position: %s;", paste(headerBackgroundPositions, collapse = ", ")),
+  sprintf("background-size: %s;", paste(headerBackgroundSizes, collapse = ", ")),
+  "padding-top: 2.4rem;",
+  "padding-bottom: 2.4rem;",
+  "border-bottom: 4px solid rgba(255, 255, 255, 0.26);",
+  "box-shadow: 0 0.65rem 1.75rem rgba(24, 45, 63, 0.18);"
+)
 
-# add subset details to cohortDefintionDf?
-cohortDefintionDf <- merge(cohortDefintionDf, subsetDetails, by = 'subsetId', all.x = T)
-  
-# return: subsetUnique - a list of subset logics
-#         subsetDetails - a data.frame with subset details 
-#         cohortDefintionDf - cohort definition with subset details added
+titleDetails <- c()
+if (!is.null(protocolSubheading) && nzchar(protocolSubheading)) {
+  titleDetails <- c(titleDetails, as.character(protocolSubheading))
+}
+titleDetails <- c(titleDetails, protocolDate)
+titleDetailsScript <- sprintf(
+  paste0(
+    "<script>",
+    "document.addEventListener('DOMContentLoaded', function() {",
+    "var title = document.querySelector('.quarto-title-block .quarto-title-banner .title');",
+    "if (!title) return;",
+    "var details = %s;",
+    "details.forEach(function(text, index) {",
+    "var detail = document.createElement('span');",
+    "detail.className = index === details.length - 1 ? 'protocol-title-date' : 'protocol-title-subheading';",
+    "detail.textContent = text;",
+    "title.appendChild(detail);",
+    "});",
+    "});",
+    "</script>"
+  ),
+  jsonlite::toJSON(titleDetails, auto_unbox = FALSE)
+)
 
-} # end if subsetDefs is not null
-
-negativeControls <- NULL
-if("negativeControlOutcomes" %in% unlist(lapply(json$sharedResources, function(x) names(x)))){
-  
-  negativeControlInd <- which(unlist(lapply(json$sharedResources, function(x) "negativeControlOutcomes" %in% names(x)))) 
-  
-  negativeControlsTemp <- json$sharedResources[[negativeControlInd]]$negativeControlOutcomes
-  
-  negativeControls <- as.data.frame(do.call(rbind,lapply(negativeControlsTemp$negativeControlOutcomeCohortSet, function(x) x)))
-  
-  negativeControls$occurrenceType <- negativeControlsTemp$occurrenceType
-  negativeControls$detectOnDescendants <- negativeControlsTemp$detectOnDescendants
-  
+if (length(headerStyles) > 0) {
+  cat(
+    "<style>",
+    ".quarto-title-block .quarto-title-banner {",
+    paste(headerStyles, collapse = "\n"),
+    "}",
+    ".quarto-title-block .quarto-title-banner .title { font-weight: 700; letter-spacing: 0; }",
+    ".quarto-title-block .quarto-title-banner .title .protocol-title-subheading { display: block; max-width: 48rem; margin-top: 0.55rem; font-size: 1.05rem; font-weight: 400; line-height: 1.35; opacity: 0.9; }",
+    ".quarto-title-block .quarto-title-banner .title .protocol-title-date { display: block; margin-top: 0.45rem; font-size: 0.9rem; font-weight: 500; line-height: 1.25; opacity: 0.82; }",
+    ".quarto-title-block .quarto-title-meta { display: none !important; }",
+    "body.quarto-light { margin-left: 0; }",
+    "#quarto-content.toc-left { margin-left: 0; padding-left: 0; }",
+    "#quarto-sidebar-toc-left { grid-column: screen-start / body-start; background-color: #f4f5f6; border-right: 1px solid #d9dee3; margin-left: 0; padding-left: 0; }",
+    "#quarto-sidebar-toc-left #TOC { margin-left: 0; padding: 1rem 1.1rem; }",
+    "@media (max-width: 640px) {",
+    ".quarto-title-block .quarto-title-banner { background-position: right 1rem center, center; background-size: auto min(3rem, 55%), cover; padding-right: 6rem; padding-top: 1.75rem; padding-bottom: 1.75rem; }",
+    "}",
+    "</style>",
+    sep = "\n"
+  )
+  cat(titleDetailsScript, sep = "\n")
 }
 ```
 

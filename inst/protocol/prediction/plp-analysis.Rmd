@@ -2,9 +2,20 @@
 output: html_document
 ---
   
+```{r, echo=FALSE}
+
+mdSettings <- attr(modelDesignSetting$modelSettings$param,'settings')
+modelName <- mdSettings$name
+if(is.null(mdSettings)){
+  # newer PLP being used 
+  mdSettings <- modelDesignSetting$modelSettings$settings
+  modelName <- mdSettings$modelName
+}
+```
+
 ##### Analysis
 
-The model that will be trained is a ``r attr(modelDesignSetting$modelSettings$param,'settings')$name `` that uses the `PatientLevelPrediction` function ``r modelDesignSetting$modelSettings$fitFunction `` to fit the model.
+The model that will be trained is a ``r modelName `` that uses the `PatientLevelPrediction` function ``r modelDesignSetting$modelSettings$fitFunction `` to fit the model.
 
 ```{r, echo=FALSE}
 if(modelDesignSetting$modelSettings$fitFunction == "fitCyclopsModel"){
@@ -16,10 +27,10 @@ if(modelDesignSetting$modelSettings$fitFunction == "fitCyclopsModel"){
  )
  
  settings <- data.frame(
-   name = names(attr(modelDesignSetting$modelSettings$param,"settings")),
+   name = names(mdSettings),
    value = unlist(
      lapply(
-       attr(modelDesignSetting$modelSettings$param,"settings"), 
+       mdSettings, 
        function(x) paste0(names(x), x, collapse = ':', sep=' ')
             )
      )
@@ -35,10 +46,10 @@ if(modelDesignSetting$modelSettings$fitFunction == "fitCyclopsModel"){
      )
  
  settings <- data.frame(
-   name = names(attr(modelDesignSetting$modelSettings$param,"settings")),
+   name = names(mdSettings),
    value = unlist(
      lapply(
-       attr(modelDesignSetting$modelSettings$param,"settings"), 
+       mdSettings, 
        function(x) paste0(names(x), x, collapse = '-', sep='')
             )
      )
@@ -53,7 +64,20 @@ The cross validation settings are to use ``r modelDesignSetting$splitSettings$nf
 
 **Hyper-parameter search**
 
-The hyper-parameters investigated while fitting the model are listed below.  The combination of hyper-parameters that obtains the highest AUROC value in the training data via cross validation will be uses in the final model.
+```{r, echo=FALSE}
+search <- 'grid'
+maximize <- TRUE
+metric <- 'AUROC'
+
+if(!is.null(modelDesignSetting$hyperparameterSettings)){
+  search <- modelDesignSetting$hyperparameterSettings$search
+  maximize <- modelDesignSetting$hyperparameterSettings$tuningMetric$maximize
+  metric <- modelDesignSetting$hyperparameterSettings$tuningMetric$name
+}
+
+```
+
+The hyper-parameters investigated while fitting the model are listed below.  The combination of hyper-parameters that ``r ifelse(maximize,'maximize','minimize') `` the ``r metric `` value in the training data via cross validation will be uses in the final model.  A ``r search`` search is applied.
 
 ```{r, echo=FALSE, results='asis'}
 print(

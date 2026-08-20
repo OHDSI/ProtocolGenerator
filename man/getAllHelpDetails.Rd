@@ -22,3 +22,19 @@ and all default input values plus input descriptions are returned
 Returns a data.frmae with the name of all the inputs, the default input
 values and a description about the inputs
 }
+\seealso{
+Other Helpers:
+\code{\link[=formatCovariateSettings]{formatCovariateSettings()}},
+\code{\link[=functionDefaults]{functionDefaults()}},
+\code{\link[=getAllHelpText]{getAllHelpText()}},
+\code{\link[=getCohortDefinitionsFromJson]{getCohortDefinitionsFromJson()}},
+\code{\link[=getConcepts]{getConcepts()}},
+\code{\link[=getDemoLoc]{getDemoLoc()}},
+\code{\link[=getFunctionFromArgName]{getFunctionFromArgName()}},
+\code{\link[=getHelpText]{getHelpText()}},
+\code{\link[=getNegativeControlsFromJson]{getNegativeControlsFromJson()}},
+\code{\link[=getSettingsTable]{getSettingsTable()}},
+\code{\link[=reportTableFormat]{reportTableFormat()}},
+\code{\link[=tagPrint]{tagPrint()}}
+}
+\concept{Helpers}

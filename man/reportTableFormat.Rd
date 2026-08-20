@@ -9,7 +9,8 @@ reportTableFormat(
   groupBy = NULL,
   columns = NULL,
   elementId = NULL,
-  caption
+  caption,
+  groupByButton = FALSE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ reportTableFormat(
 \item{elementId}{Element ID for the widget.}
 
 \item{caption}{A table caption}
+
+\item{groupByButton}{Whether to add a button that lets you group/ungroup rows in the table}
 }
 \value{
 Details about all inputs into the functionName within R package of interest
@@ -32,3 +35,19 @@ create a grouped reactable::reactable
 \details{
 Returns a reactable::reactable
 }
+\seealso{
+Other Helpers:
+\code{\link[=formatCovariateSettings]{formatCovariateSettings()}},
+\code{\link[=functionDefaults]{functionDefaults()}},
+\code{\link[=getAllHelpDetails]{getAllHelpDetails()}},
+\code{\link[=getAllHelpText]{getAllHelpText()}},
+\code{\link[=getCohortDefinitionsFromJson]{getCohortDefinitionsFromJson()}},
+\code{\link[=getConcepts]{getConcepts()}},
+\code{\link[=getDemoLoc]{getDemoLoc()}},
+\code{\link[=getFunctionFromArgName]{getFunctionFromArgName()}},
+\code{\link[=getHelpText]{getHelpText()}},
+\code{\link[=getNegativeControlsFromJson]{getNegativeControlsFromJson()}},
+\code{\link[=getSettingsTable]{getSettingsTable()}},
+\code{\link[=tagPrint]{tagPrint()}}
+}
+\concept{Helpers}

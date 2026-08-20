@@ -3,6 +3,9 @@
 cat('\n\n#### Model Design ', i, paste0(' {#sec-model-design-',i,'}'),' \n\n')
 ```
 
+::: {.callout-important collapse="true"}
+# Model Design
+
 ```{r, child = "prediction/plp-targets-outcomes.Rmd"}
 ```
 
@@ -14,3 +17,5 @@ cat('\n\n#### Model Design ', i, paste0(' {#sec-model-design-',i,'}'),' \n\n')
 
 ```{r, child = "prediction/plp-analysis.Rmd"}
 ```
+
+:::

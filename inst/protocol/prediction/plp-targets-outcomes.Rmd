@@ -9,21 +9,23 @@ output: html_document
 reportTableFormat(
   table = tosSub %>%
     dplyr::arrange(.data$parentNameTarget, .data$cohortNameTarget, .data$parentNameOutcome), 
-  groupBy = c('parentNameTarget','cohortNameTarget'),
+  groupBy = 'parentNameTarget', 
+  elementId = paste0('plp-targets-',i), 
+  groupByButton = TRUE,
   columns = list(
-        subsetIdTarget = reactable::colDef(show = F),
-        isParentTarget = reactable::colDef(show = F),
-        parentIdTarget = reactable::colDef(show = F),
-        subsetNameTarget = reactable::colDef(show = F),
-        packageVersionTarget = reactable::colDef(show = F),
-        numberSubsetOperatorsTarget = reactable::colDef(show = F),
+        subsetIdTarget = reactable::colDef(show = FALSE),
+        isParentTarget = reactable::colDef(show = FALSE),
+        parentIdTarget = reactable::colDef(show = FALSE),
+        subsetNameTarget = reactable::colDef(show = FALSE),
+        packageVersionTarget = reactable::colDef(show = FALSE),
+        numberSubsetOperatorsTarget = reactable::colDef(show = FALSE),
 
-        subsetIdOutcome = reactable::colDef(show = F),
-        isParentOutcome = reactable::colDef(show = F),
-        parentIdOutcome = reactable::colDef(show = F),
-        subsetNameOutcome = reactable::colDef(show = F),
-        packageVersionOutcome = reactable::colDef(show = F),
-        numberSubsetOperatorsOutcome = reactable::colDef(show = F),
+        subsetIdOutcome = reactable::colDef(show = FALSE),
+        isParentOutcome = reactable::colDef(show = FALSE),
+        parentIdOutcome = reactable::colDef(show = FALSE),
+        subsetNameOutcome = reactable::colDef(show = FALSE),
+        packageVersionOutcome = reactable::colDef(show = FALSE),
+        numberSubsetOperatorsOutcome = reactable::colDef(show = FALSE),
         
         cohortNameTarget = reactable::colDef(
        show = TRUE,
@@ -40,13 +42,13 @@ reportTableFormat(
           minWidth = 300, 
           aggregate = 'count'
         ),
-        cohortIdTarget = reactable::colDef(show = F),
-        cohortIdOutcome = reactable::colDef(show = F),
+        cohortIdTarget = reactable::colDef(show = FALSE),
+        cohortIdOutcome = reactable::colDef(show = FALSE),
     
         subsetCohortsTarget = reactable::colDef(html = TRUE),
-        subsetCohortsOutcome = reactable::colDef(show = F),
+        subsetCohortsOutcome = reactable::colDef(show = FALSE),
         appliedSubsetsTarget = reactable::colDef(html = TRUE),
-        appliedSubsetsOutcome = reactable::colDef(show = F),
+        appliedSubsetsOutcome = reactable::colDef(show = FALSE),
     
     parentNameOutcome = reactable::colDef(
       show = TRUE,
@@ -56,12 +58,12 @@ reportTableFormat(
       minWidth = 300,
       aggregate = 'count'
       ),
-    designId = reactable::colDef(show = F),
+    designId = reactable::colDef(show = FALSE),
     
       parentNameTarget = reactable::colDef(
           name = 'Target Parent',
           html = TRUE, 
-          filterable = T, 
+          filterable = TRUE, 
           minWidth = 300
         ),
      cohortNameWithLinkTarget = reactable::colDef(
