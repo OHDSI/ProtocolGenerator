@@ -23,7 +23,7 @@ You can personalize the protocol with the following inputs:
 
 To run the protocol generator using the demo json specification in the package you can run:
 
-```{r demo, echo=TRUE, results = 'hide'}
+```{r demo, echo=TRUE, eval = FALSE, results = 'hide'}
 library(ProtocolGenerator)
 
 # to run the protocol generator with a demo json specification
