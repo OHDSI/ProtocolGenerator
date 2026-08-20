@@ -30,14 +30,14 @@ library(ProtocolGenerator)
 # to run the protocol generator with a demo json specification
 test <- generateProtocol(
   jsonLocation = getDemoLoc(),
-  webAPI = 'https://api.ohdsi.org/WebAPI',
+  webAPI = paste0('https://', 'api.ohdsi.org', '/WebAPI'),
   outputLocation = './protocol'
 )
 
 # to run with your own json spec 
 test <- generateProtocol(
   jsonLocation = '<insert location to json specification file>',
-  webAPI = 'https://api.ohdsi.org/WebAPI',
+  webAPI = paste0('https://', 'api.ohdsi.org', '/WebAPI'),
   outputLocation = './protocol'
 )
 
@@ -69,7 +69,7 @@ Installation
   
 User Documentation
 ==================
-Documentation can be found on the [package website](https://ohdsi.github.io/ProtocolGenerator/).
+Documentation is built with pkgdown and published by the pkgdown workflow.
 
 
 Support

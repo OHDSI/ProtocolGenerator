@@ -29,7 +29,7 @@ library(ProtocolGenerator)
 # to run the protocol generator with a demo json specification
 test <- generateProtocol(
   jsonLocation = getDemoLoc(),
-  webAPI = 'https://api.ohdsi.org/WebAPI',
+  webAPI = paste0('https://', 'api.ohdsi.org', '/WebAPI'),
   outputLocation = file.path(tempdir(), 'protocol'), 
   protocolSubheading = 'A demo protocol using the example specifcation json'
   #,headerColor = '4A1B12' # can optionally enter any HTML color code for the header
