@@ -26,3 +26,13 @@ Extract cohorts from json
 \details{
 Returns a names list with the cohorts
 }
+\seealso{
+Other Extraction:
+\code{\link[=createStratSentance]{createStratSentance()}},
+\code{\link[=getCiTargetsOutcomes]{getCiTargetsOutcomes()}},
+\code{\link[=getCohortDiagnosticTables]{getCohortDiagnosticTables()}},
+\code{\link[=getCountStatement]{getCountStatement()}},
+\code{\link[=getPlpSettings]{getPlpSettings()}},
+\code{\link[=getSccsSettings]{getSccsSettings()}}
+}
+\concept{Extraction}

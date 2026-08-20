@@ -20,3 +20,13 @@ Extract plp tables and settings from json
 \details{
 Returns a names list with the tables and settings
 }
+\seealso{
+Other Extraction:
+\code{\link[=createStratSentance]{createStratSentance()}},
+\code{\link[=extractCohortMethodSettings]{extractCohortMethodSettings()}},
+\code{\link[=getCiTargetsOutcomes]{getCiTargetsOutcomes()}},
+\code{\link[=getCohortDiagnosticTables]{getCohortDiagnosticTables()}},
+\code{\link[=getCountStatement]{getCountStatement()}},
+\code{\link[=getSccsSettings]{getSccsSettings()}}
+}
+\concept{Extraction}

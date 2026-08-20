@@ -20,3 +20,13 @@ Create a sentence that explains the number of targets, outcomes and settings per
 \details{
 Returns a string
 }
+\seealso{
+Other Extraction:
+\code{\link[=createStratSentance]{createStratSentance()}},
+\code{\link[=extractCohortMethodSettings]{extractCohortMethodSettings()}},
+\code{\link[=getCiTargetsOutcomes]{getCiTargetsOutcomes()}},
+\code{\link[=getCohortDiagnosticTables]{getCohortDiagnosticTables()}},
+\code{\link[=getPlpSettings]{getPlpSettings()}},
+\code{\link[=getSccsSettings]{getSccsSettings()}}
+}
+\concept{Extraction}

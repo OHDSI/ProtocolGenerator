@@ -18,3 +18,13 @@ List with column names for the cohort method outcome table
 \details{
 Returns a names list with the cohorts names
 }
+\seealso{
+Other ColDefs:
+\code{\link[=cmColDef]{cmColDef()}},
+\code{\link[=defaultColumns]{defaultColumns()}},
+\code{\link[=getCIcolumns]{getCIcolumns()}},
+\code{\link[=getCdCols]{getCdCols()}},
+\code{\link[=getPlpColDefs]{getPlpColDefs()}},
+\code{\link[=getSccsColDefs]{getSccsColDefs()}}
+}
+\concept{ColDefs}

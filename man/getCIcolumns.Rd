@@ -15,3 +15,13 @@ A reactable colDef list for the cohort incidence tables
 \details{
 Returns a list of colDefs
 }
+\seealso{
+Other ColDefs:
+\code{\link[=cmColDef]{cmColDef()}},
+\code{\link[=cmOutcomeColDef]{cmOutcomeColDef()}},
+\code{\link[=defaultColumns]{defaultColumns()}},
+\code{\link[=getCdCols]{getCdCols()}},
+\code{\link[=getPlpColDefs]{getPlpColDefs()}},
+\code{\link[=getSccsColDefs]{getSccsColDefs()}}
+}
+\concept{ColDefs}

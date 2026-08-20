@@ -26,3 +26,13 @@ Extract exposure/outcomes of interest, shared and analysis specific negative con
 \details{
 Returns a list of tables and settings
 }
+\seealso{
+Other Extraction:
+\code{\link[=createStratSentance]{createStratSentance()}},
+\code{\link[=extractCohortMethodSettings]{extractCohortMethodSettings()}},
+\code{\link[=getCiTargetsOutcomes]{getCiTargetsOutcomes()}},
+\code{\link[=getCohortDiagnosticTables]{getCohortDiagnosticTables()}},
+\code{\link[=getCountStatement]{getCountStatement()}},
+\code{\link[=getPlpSettings]{getPlpSettings()}}
+}
+\concept{Extraction}

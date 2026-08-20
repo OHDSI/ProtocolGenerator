@@ -8,3 +8,4 @@ A package for creating protocols from json specification
 
 _PACKAGE
 }
+\keyword{internal}

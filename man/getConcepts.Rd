@@ -28,3 +28,19 @@ Returns a names list of length two with 'standard' and 'source' containing
 a data.frame with the concept ids details for the standard concepts and their
 sourced concepts.
 }
+\seealso{
+Other Helpers:
+\code{\link[=formatCovariateSettings]{formatCovariateSettings()}},
+\code{\link[=functionDefaults]{functionDefaults()}},
+\code{\link[=getAllHelpDetails]{getAllHelpDetails()}},
+\code{\link[=getAllHelpText]{getAllHelpText()}},
+\code{\link[=getCohortDefinitionsFromJson]{getCohortDefinitionsFromJson()}},
+\code{\link[=getDemoLoc]{getDemoLoc()}},
+\code{\link[=getFunctionFromArgName]{getFunctionFromArgName()}},
+\code{\link[=getHelpText]{getHelpText()}},
+\code{\link[=getNegativeControlsFromJson]{getNegativeControlsFromJson()}},
+\code{\link[=getSettingsTable]{getSettingsTable()}},
+\code{\link[=reportTableFormat]{reportTableFormat()}},
+\code{\link[=tagPrint]{tagPrint()}}
+}
+\concept{Helpers}

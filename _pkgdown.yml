@@ -1,0 +1,61 @@
+template:
+  bootstrap: 5
+  params:
+    bootswatch: cosmo
+  light-switch: false
+
+development:
+  mode: auto
+  development: docs/dev
+
+home:
+  links:
+  - text: Ask a question
+    href: http://forums.ohdsi.org
+
+navbar:
+  structure:
+    left: [home, reference, articles, news]
+    right: [hades, github]
+  components:
+    home:
+      icon: fa-home fa-lg
+      href: index.html
+    articles:
+      icon: fa-book fa-lg
+      text: Articles
+      menu:
+      - text: Demo
+        href: articles/ProtocolGenerator.html
+    reference:
+      icon: fa-info-circle fa-lg
+      text: Reference
+      href: reference/index.html
+    news:
+      icon: fa-newspaper-o fa-lg
+      text: Changelog
+      href: news/index.html
+    github:
+      icon: fa-github fa-lg
+      href: https://github.com/OHDSI/ProtocolGenerator
+    hades:
+      text: hadesLogo
+      href: https://ohdsi.github.io/Hades
+
+reference:
+  - title: "Extraction function"
+    desc: >
+      These functions extract details for the report from the json object
+    contents: has_concept("Extraction")
+  - title: "Helpers"
+    desc: >
+      Helpers with various functionalities.
+    contents: has_concept("Helpers")
+  - title: "ColDefs"
+    desc: >
+      Column definitions.
+    contents: has_concept("ColDefs")
+  - title: "Generate Protocol"
+    desc: >
+      Functions for generating protocols.
+    contents: has_concept("Generate")

@@ -18,3 +18,13 @@ Create a sentence that explains the stratification defined in the analysis.
 \details{
 Returns a string
 }
+\seealso{
+Other Extraction:
+\code{\link[=extractCohortMethodSettings]{extractCohortMethodSettings()}},
+\code{\link[=getCiTargetsOutcomes]{getCiTargetsOutcomes()}},
+\code{\link[=getCohortDiagnosticTables]{getCohortDiagnosticTables()}},
+\code{\link[=getCountStatement]{getCountStatement()}},
+\code{\link[=getPlpSettings]{getPlpSettings()}},
+\code{\link[=getSccsSettings]{getSccsSettings()}}
+}
+\concept{Extraction}

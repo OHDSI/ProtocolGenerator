@@ -1,8 +1,15 @@
 ProtocolGenerator
 ===============
 
-[![Build Status](https://github.com/OHDSI/ProtocolGenerator/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/ProtocolGenerator/actions?query=workflow%3AR-CMD-check)
-[![codecov.io](https://codecov.io/github/OHDSI/ProtocolGenerator/coverage.svg?branch=main)](https://codecov.io/github/OHDSI/ProtocolGenerator?branch=main)
+[![R-CMD-check](https://github.com/OHDSI/ProtocolGenerator/actions/workflows/R_CMD_check_Hades.yaml/badge.svg)](https://github.com/OHDSI/ProtocolGenerator/actions/workflows/R_CMD_check_Hades.yaml)
+[![pkgdown](https://github.com/OHDSI/ProtocolGenerator/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/OHDSI/ProtocolGenerator/actions/workflows/pkgdown.yaml)
+[![codecov](https://codecov.io/github/OHDSI/ProtocolGenerator/branch/main/graph/badge.svg)](https://app.codecov.io/github/OHDSI/ProtocolGenerator?branch=main)
+[![GitHub R package version](https://img.shields.io/github/r-package/v/OHDSI/ProtocolGenerator)](https://github.com/OHDSI/ProtocolGenerator/blob/main/DESCRIPTION)
+[![R version](https://img.shields.io/badge/R-%3E%3D%203.3.0-276DC3)](https://www.r-project.org/)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![GitHub issues](https://img.shields.io/github/issues/OHDSI/ProtocolGenerator)](https://github.com/OHDSI/ProtocolGenerator/issues)
+[![Last commit](https://img.shields.io/github/last-commit/OHDSI/ProtocolGenerator)](https://github.com/OHDSI/ProtocolGenerator/commits/main)
 
 
 Introduction
@@ -14,7 +21,7 @@ Examples
 ========
 
 
-```{r}
+```r
 # install dependencies
 remotes::install_github('ohdsi/ProtocolGenerator')
 

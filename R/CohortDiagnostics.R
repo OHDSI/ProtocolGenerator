@@ -12,6 +12,7 @@
 #' @return
 #' A list with the tables to display
 #'
+#' @family Extraction
 #' @export
 #' 
 getCohortDiagnosticTables <- function(
@@ -76,6 +77,7 @@ getCohortDiagnosticTables <- function(
 #' @return
 #' A list of colDefs for cohort diagnostic 
 #'
+#' @family ColDefs
 #' @export
 #' 
 getCdCols <- function(){

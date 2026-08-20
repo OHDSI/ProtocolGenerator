@@ -20,3 +20,13 @@ Extracts a list of target tables, outcome tables, TARs and vector of unique targ
 \details{
 Returns a list
 }
+\seealso{
+Other Extraction:
+\code{\link[=createStratSentance]{createStratSentance()}},
+\code{\link[=extractCohortMethodSettings]{extractCohortMethodSettings()}},
+\code{\link[=getCohortDiagnosticTables]{getCohortDiagnosticTables()}},
+\code{\link[=getCountStatement]{getCountStatement()}},
+\code{\link[=getPlpSettings]{getPlpSettings()}},
+\code{\link[=getSccsSettings]{getSccsSettings()}}
+}
+\concept{Extraction}

@@ -9,6 +9,7 @@
 #' @return
 #' A file path location to an example specification json
 #'
+#' @family Helpers
 #' @export
 #' 
 getDemoLoc <- function(){
@@ -51,6 +52,7 @@ getDemoLoc <- function(){
 #' @return
 #' An named R list with the elements 'standard' and 'source'
 #'
+#' @family Generate
 #' @export
 #' 
 generateProtocol <- function(

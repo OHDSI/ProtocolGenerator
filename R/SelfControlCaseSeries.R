@@ -13,6 +13,7 @@
 #' @return
 #' A list with the tables to display
 #'
+#' @family Extraction
 #' @export
 #' 
 getSccsSettings <- function(
@@ -188,6 +189,7 @@ getSccsSettings <- function(
 #' @return
 #' A column definition list
 #'
+#' @family ColDefs
 #' @export
 #' 
 getSccsColDefs <- function(){

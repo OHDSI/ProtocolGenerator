@@ -22,3 +22,19 @@ and all input details are returned
 Returns a data.frame with the name of all the inputs and descriptions of
 the inputs
 }
+\seealso{
+Other Helpers:
+\code{\link[=formatCovariateSettings]{formatCovariateSettings()}},
+\code{\link[=functionDefaults]{functionDefaults()}},
+\code{\link[=getAllHelpDetails]{getAllHelpDetails()}},
+\code{\link[=getCohortDefinitionsFromJson]{getCohortDefinitionsFromJson()}},
+\code{\link[=getConcepts]{getConcepts()}},
+\code{\link[=getDemoLoc]{getDemoLoc()}},
+\code{\link[=getFunctionFromArgName]{getFunctionFromArgName()}},
+\code{\link[=getHelpText]{getHelpText()}},
+\code{\link[=getNegativeControlsFromJson]{getNegativeControlsFromJson()}},
+\code{\link[=getSettingsTable]{getSettingsTable()}},
+\code{\link[=reportTableFormat]{reportTableFormat()}},
+\code{\link[=tagPrint]{tagPrint()}}
+}
+\concept{Helpers}

@@ -12,6 +12,7 @@
 #' @return
 #' An named R list with ...
 #'
+#' @family Extraction
 #' @export
 #' 
 getPlpSettings <- function(
@@ -108,6 +109,7 @@ getPlpSettings <- function(
 #' @return
 #' A column definition list
 #'
+#' @family ColDefs
 #' @export
 #' 
 getPlpColDefs <- function(){

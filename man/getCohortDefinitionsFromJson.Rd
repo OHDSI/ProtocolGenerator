@@ -18,3 +18,19 @@ Extract cohorts from json
 \details{
 Returns a names list with the cohorts
 }
+\seealso{
+Other Helpers:
+\code{\link[=formatCovariateSettings]{formatCovariateSettings()}},
+\code{\link[=functionDefaults]{functionDefaults()}},
+\code{\link[=getAllHelpDetails]{getAllHelpDetails()}},
+\code{\link[=getAllHelpText]{getAllHelpText()}},
+\code{\link[=getConcepts]{getConcepts()}},
+\code{\link[=getDemoLoc]{getDemoLoc()}},
+\code{\link[=getFunctionFromArgName]{getFunctionFromArgName()}},
+\code{\link[=getHelpText]{getHelpText()}},
+\code{\link[=getNegativeControlsFromJson]{getNegativeControlsFromJson()}},
+\code{\link[=getSettingsTable]{getSettingsTable()}},
+\code{\link[=reportTableFormat]{reportTableFormat()}},
+\code{\link[=tagPrint]{tagPrint()}}
+}
+\concept{Helpers}

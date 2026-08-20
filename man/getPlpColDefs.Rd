@@ -15,3 +15,13 @@ create colDefs for prediction table
 \details{
 Returns a names list with the cohorts
 }
+\seealso{
+Other ColDefs:
+\code{\link[=cmColDef]{cmColDef()}},
+\code{\link[=cmOutcomeColDef]{cmOutcomeColDef()}},
+\code{\link[=defaultColumns]{defaultColumns()}},
+\code{\link[=getCIcolumns]{getCIcolumns()}},
+\code{\link[=getCdCols]{getCdCols()}},
+\code{\link[=getSccsColDefs]{getSccsColDefs()}}
+}
+\concept{ColDefs}

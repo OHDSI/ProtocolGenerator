@@ -20,3 +20,19 @@ This gets the input name from the arg name as CohortMethod ass Arg to the inputs
 \details{
 Returns the name of the input the setting arg corresponds to
 }
+\seealso{
+Other Helpers:
+\code{\link[=formatCovariateSettings]{formatCovariateSettings()}},
+\code{\link[=functionDefaults]{functionDefaults()}},
+\code{\link[=getAllHelpDetails]{getAllHelpDetails()}},
+\code{\link[=getAllHelpText]{getAllHelpText()}},
+\code{\link[=getCohortDefinitionsFromJson]{getCohortDefinitionsFromJson()}},
+\code{\link[=getConcepts]{getConcepts()}},
+\code{\link[=getDemoLoc]{getDemoLoc()}},
+\code{\link[=getHelpText]{getHelpText()}},
+\code{\link[=getNegativeControlsFromJson]{getNegativeControlsFromJson()}},
+\code{\link[=getSettingsTable]{getSettingsTable()}},
+\code{\link[=reportTableFormat]{reportTableFormat()}},
+\code{\link[=tagPrint]{tagPrint()}}
+}
+\concept{Helpers}

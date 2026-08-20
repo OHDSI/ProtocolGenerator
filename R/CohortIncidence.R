@@ -11,7 +11,8 @@
 #' 
 #' @return
 #' An string with the count information
-#'
+#' 
+#' @family Extraction
 #' @export
 #' 
 getCountStatement <- function(
@@ -84,6 +85,7 @@ getCountStatement <- function(
 #' @return
 #' An string with the stratification information
 #'
+#' @family Extraction
 #' @export
 #' 
 createStratSentance <- function(CohortIncidenceModuleSettings){
@@ -113,6 +115,7 @@ createStratSentance <- function(CohortIncidenceModuleSettings){
 #' @return
 #' A list with the tables to present in the protocol
 #'
+#' @family Extraction
 #' @export
 #' 
 getCiTargetsOutcomes <- function(
@@ -198,6 +201,7 @@ getCiTarString <- function(tarDefs, tarId){
 #' @return
 #' A list of colDefs for the target and outcome tables describing the cohort incidence analysis
 #'
+#' @family ColDefs
 #' @export
 #' 
 getCIcolumns <- function(){

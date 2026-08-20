@@ -74,3 +74,4 @@ Specify the location of the json specification file, the data diagnostic folder 
 the ATLAS webAPI (to process cohorts and concepts) and where you want the
 protocol saved.
 }
+\concept{Generate}

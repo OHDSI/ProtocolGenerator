@@ -15,3 +15,13 @@ A list of colDefs for the columns used in cohort diagnostic protocol module
 \details{
 Returns a list of colDefs
 }
+\seealso{
+Other ColDefs:
+\code{\link[=cmColDef]{cmColDef()}},
+\code{\link[=cmOutcomeColDef]{cmOutcomeColDef()}},
+\code{\link[=defaultColumns]{defaultColumns()}},
+\code{\link[=getCIcolumns]{getCIcolumns()}},
+\code{\link[=getPlpColDefs]{getPlpColDefs()}},
+\code{\link[=getSccsColDefs]{getSccsColDefs()}}
+}
+\concept{ColDefs}

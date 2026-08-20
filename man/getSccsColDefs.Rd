@@ -15,3 +15,13 @@ Create col defs for SCCS
 \details{
 Returns a named list of colDefs
 }
+\seealso{
+Other ColDefs:
+\code{\link[=cmColDef]{cmColDef()}},
+\code{\link[=cmOutcomeColDef]{cmOutcomeColDef()}},
+\code{\link[=defaultColumns]{defaultColumns()}},
+\code{\link[=getCIcolumns]{getCIcolumns()}},
+\code{\link[=getCdCols]{getCdCols()}},
+\code{\link[=getPlpColDefs]{getPlpColDefs()}}
+}
+\concept{ColDefs}

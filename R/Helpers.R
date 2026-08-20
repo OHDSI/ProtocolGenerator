@@ -27,6 +27,7 @@
 #' @return
 #' Nothing just prints the object in quarto
 #'
+#' @family Helpers
 #' @export
 #' 
 tagPrint <- function(x){
@@ -45,6 +46,7 @@ tagPrint <- function(x){
 #' @return
 #' An named R list with the elements subsetUnique (list of subset operators), cohortDefinitions (list of cohortDefinitions) and cohortDefinitionDf (data.frame of cohort definitions)
 #'
+#' @family Helpers
 #' @export
 #' 
 getCohortDefinitionsFromJson <- function(
@@ -268,6 +270,7 @@ getCohortDefinitionsFromJson <- function(
 #' @return
 #' An named R list with the elements 'standard' and 'source'
 #'
+#' @family Helpers
 #' @export
 #' 
 getConcepts <- function(
@@ -366,6 +369,7 @@ getConcepts <- function(
 #' @return
 #' A data.frame with the negative control details or NULL if no negative controls
 #'
+#' @family Helpers
 #' @export
 #' 
 getNegativeControlsFromJson <- function(json){
@@ -406,6 +410,7 @@ getNegativeControlsFromJson <- function(json){
 #' @return
 #' the name of the input the setting arg corresponds to
 #'
+#' @family Helpers
 #' @export
 #' 
 getFunctionFromArgName <- function(
@@ -437,6 +442,7 @@ getFunctionFromArgName <- function(
 #' @return
 #' Details about the input
 #'
+#' @family Helpers
 #' @export
 #' 
 getHelpText <- function(
@@ -495,6 +501,7 @@ getHelpText <- function(
 #' @return
 #' Details about all inputs into the functionName within R package of interest
 #'
+#' @family Helpers
 #' @export
 #' 
 getAllHelpText <- function(
@@ -556,6 +563,7 @@ getExtraCyclopsHelp <- function(){
 #' @return
 #' Details about all default inputs into the functionName within R package of interest
 #'
+#' @family Helpers
 #' @export
 #' 
 functionDefaults <- function(
@@ -711,6 +719,7 @@ listToDf <- function(
 #' @return
 #' Details about all inputs into the functionName within R package of interest
 #'
+#' @family Helpers
 #' @export
 #' 
 getAllHelpDetails <- function(
@@ -796,6 +805,7 @@ getAllHelpDetails <- function(
 #' @return
 #' Returns a tibble with the input details
 #'
+#' @family Helpers
 #' @export
 #' 
 getSettingsTable <- function(
@@ -852,6 +862,7 @@ getSettingsTable <- function(
 #' @return
 #' Returns a reactable colunn definition
 #'
+#' @family ColDefs
 #' @export
 #' 
 defaultColumns <- function(data){
@@ -897,6 +908,7 @@ defaultColumns <- function(data){
 #' @return
 #' Details about all inputs into the functionName within R package of interest
 #'
+#' @family Helpers
 #' @export
 #' 
 reportTableFormat <- function(
@@ -969,6 +981,7 @@ reportTableFormat <- function(
 #' @return
 #' a data.frame with the covariate settings
 #'
+#' @family Helpers
 #' @export
 #' 
 formatCovariateSettings <- function(

@@ -20,6 +20,7 @@
 #'
 #' _PACKAGE
 #' @name ProtocolGenerator
+#' @keywords internal
 #' @importFrom dplyr %>%
 #' @importFrom rlang .data
 NULL

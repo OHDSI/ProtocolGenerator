@@ -13,6 +13,7 @@
 #' @return
 #' An named R list with ...
 #'
+#' @family Extraction
 #' @export
 #' 
 extractCohortMethodSettings <- function(
@@ -291,6 +292,7 @@ return(
 #' @return
 #' A column definition list
 #'
+#' @family ColDefs
 #' @export
 #' 
 cmColDef <- function(
@@ -415,6 +417,7 @@ cmColDef <- function(
 #' @return
 #' A column definition list
 #'
+#' @family ColDefs
 #' @export
 #'
 #'

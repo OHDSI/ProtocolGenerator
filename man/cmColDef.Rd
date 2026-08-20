@@ -20,3 +20,13 @@ Extract cohorts from json
 \details{
 Returns a names list with the cohorts
 }
+\seealso{
+Other ColDefs:
+\code{\link[=cmOutcomeColDef]{cmOutcomeColDef()}},
+\code{\link[=defaultColumns]{defaultColumns()}},
+\code{\link[=getCIcolumns]{getCIcolumns()}},
+\code{\link[=getCdCols]{getCdCols()}},
+\code{\link[=getPlpColDefs]{getPlpColDefs()}},
+\code{\link[=getSccsColDefs]{getSccsColDefs()}}
+}
+\concept{ColDefs}

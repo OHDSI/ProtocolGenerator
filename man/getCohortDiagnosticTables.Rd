@@ -20,3 +20,13 @@ Extract target, setting and feature table from CohortDiagnosticsSettings
 \details{
 Returns a list of tables
 }
+\seealso{
+Other Extraction:
+\code{\link[=createStratSentance]{createStratSentance()}},
+\code{\link[=extractCohortMethodSettings]{extractCohortMethodSettings()}},
+\code{\link[=getCiTargetsOutcomes]{getCiTargetsOutcomes()}},
+\code{\link[=getCountStatement]{getCountStatement()}},
+\code{\link[=getPlpSettings]{getPlpSettings()}},
+\code{\link[=getSccsSettings]{getSccsSettings()}}
+}
+\concept{Extraction}
