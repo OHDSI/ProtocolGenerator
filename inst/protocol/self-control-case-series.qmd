@@ -45,7 +45,7 @@ reportTableFormat(
     dplyr::select(-c("trueEffectSize", "exposureIdRef")) %>%
     dplyr::arrange(.data$parentNameTarget, .data$cohortNameWithLinkOutcome), 
   groupBy = 'parentNameTarget', # or outcome?
-  columns = sccsColDefs,
+  columns = sccsColDefs[names(sccsColDefs) %in% colnames(eoOfInt)],
   elementId = 'sccs-eio',
   groupByButton = TRUE,
   caption = 'Outcome exposure pairs of interest included in study'
@@ -72,13 +72,13 @@ cat('\n::: {.callout-important collapse="false"}\n')
 cat('\n# Negative controls shared in sccs\n')
 print(shiny::tagList(reportTableFormat(
   table = negTabShared %>%
-    dplyr::select("outcomeName", "standardConcept") %>%
-    dplyr::relocate("outcomeName", .before = "standardConcept"),
+    dplyr::select(dplyr::any_of(c("outcomeName", "standardConcept"))) %>%
+    dplyr::relocate("outcomeName"),
   columns = list(
     outcomeName = reactable::colDef(
           name = 'Negative Control Outcome',
           html = TRUE, 
-          filterable = T, 
+          filterable = TRUE, 
           minWidth = 200
           )
   ),
